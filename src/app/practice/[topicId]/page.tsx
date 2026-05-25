@@ -193,20 +193,42 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
 
     if (!ttsEnabledRef.current) return;
 
-    const utterance = new SpeechSynthesisUtterance(text);
+    // Strip symbols that sound robotic when read aloud
+    const cleaned = text
+      .replace(/《([^》]*)》/g, '$1')        // 《话题》→ 话题
+      .replace(/[【】「」『』""'']/g, '')     // remove CJK brackets/quotes
+      .replace(/……/g, '，')                  // ellipsis → short pause
+      .replace(/\.\.\./g, '，')              // ASCII ellipsis → pause
+      .replace(/[*_~`#]/g, '')              // strip any markdown
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    const utterance = new SpeechSynthesisUtterance(cleaned);
     utterance.lang = 'zh-CN';
-    utterance.rate = 0.92;
-    utterance.pitch = 1.05;
+    utterance.rate = 1.0;    // natural conversational speed
+    utterance.pitch = 1.0;   // natural pitch
     utterance.volume = 1;
 
     const applyVoice = () => {
       const voices = window.speechSynthesis.getVoices();
       const pick =
-        voices.find(v => v.lang === 'zh-CN' && v.name.includes('Google')) ??
+        // Microsoft neural voices (Edge on Windows — best quality by far)
+        voices.find(v => /Xiaoxiao/i.test(v.name)) ??      // female neural, very natural
+        voices.find(v => /Xiaoyi/i.test(v.name)) ??        // female neural alt
+        voices.find(v => /Yunxi/i.test(v.name)) ??         // male neural
+        voices.find(v => /Yunjian/i.test(v.name)) ??       // male neural alt
+        voices.find(v => /YunJia/i.test(v.name)) ??
+        // Google neural (Chrome on Windows/Android — decent)
+        voices.find(v => (v.lang === 'zh-CN' || v.lang === 'zh_CN') && /Google/i.test(v.name)) ??
+        // Any Microsoft zh-CN (older but still better than generic)
+        voices.find(v => (v.lang === 'zh-CN' || v.lang === 'zh_CN') && /Microsoft/i.test(v.name)) ??
+        // Fallback: any Mandarin voice
         voices.find(v => v.lang === 'zh-CN') ??
+        voices.find(v => v.lang === 'zh_CN') ??
         voices.find(v => v.lang.startsWith('zh'));
       if (pick) utterance.voice = pick;
     };
+
     if (window.speechSynthesis.getVoices().length) applyVoice();
     else window.speechSynthesis.onvoiceschanged = applyVoice;
 
