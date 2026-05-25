@@ -6,9 +6,10 @@ const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 export async function POST(req: NextRequest) {
   try {
-    const { messages, topicId } = await req.json() as {
+    const { messages, topicId, subtopic } = await req.json() as {
       messages: { role: 'user' | 'assistant'; content: string }[];
       topicId: string;
+      subtopic?: string;
     };
 
     const topic = TOPICS.find(t => t.id === topicId);
@@ -16,9 +17,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: '找不到该话题' }, { status: 400 });
     }
 
+    const subtopicLine = subtopic
+      ? `\n本次练习专注角度：${subtopic}。请在对话中引导学生围绕这个角度深入讨论，不要跑题。`
+      : '';
+
     const systemPrompt = `你是一位友善的华文口语练习伙伴，正在和新加坡中学生进行一段真实的口语对话练习。你的回复会被直接朗读出来，所以必须听起来像真人在说话，而不是书面文字。
 
-当前练习话题：${topic.title}
+当前练习话题：${topic.title}${subtopicLine}
 
 对话规则（非常重要）：
 - 每次回复只说1到2句话，绝对不能超过3句。要简短、自然、口语化。
@@ -28,7 +33,7 @@ export async function POST(req: NextRequest) {
 - 整个对话要像朋友聊天，轻松随意，不要像老师提问。
 - 全程用简体华文，不用英文。
 - 绝对不要用序号、列表或分段落的方式回复。就是自然说话。
-- 不要使用《》【】「」这类括号符号，也不要用省略号（……），用逗号或句号代替。
+- 不要使用书名号括号符号，也不要用省略号，用逗号或句号代替。
 - 不要用引号包住词语。直接说出来就好。`;
 
 

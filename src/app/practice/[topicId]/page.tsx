@@ -5,7 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import {
   ArrowLeft, Send, Loader2, BookOpen, RotateCcw, Lightbulb,
   Mic, Square, Star, TrendingUp, Repeat2, MessageSquare,
-  Volume2, VolumeX, PhoneOff,
+  Volume2, VolumeX,
 } from 'lucide-react';
 import { TOPICS, COLOR_MAP } from '@/lib/topics';
 import { cn } from '@/lib/utils';
@@ -66,16 +66,22 @@ function SoundWave({ className }: { className?: string }) {
   );
 }
 
-function FeedbackCard({ feedback, colors, onRestart }: {
+function FeedbackCard({ feedback, colors, onRestart, turns }: {
   feedback: Feedback;
   colors: (typeof COLOR_MAP)[keyof typeof COLOR_MAP];
   onRestart: () => void;
+  turns: number;
 }) {
   return (
     <div className="mx-2 my-4 rounded-2xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-5 space-y-4 shadow-sm">
-      <div className="flex items-center gap-2">
-        <Star className="h-5 w-5 text-indigo-500" />
-        <p className="text-base font-bold text-indigo-700">练习反馈</p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Star className="h-5 w-5 text-indigo-500" />
+          <p className="text-base font-bold text-indigo-700">练习反馈</p>
+        </div>
+        <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-600 font-chinese">
+          完成 {turns} 轮对话
+        </span>
       </div>
       <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
         <div className="flex items-start gap-2.5">
@@ -129,6 +135,7 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
 
   const studentName = searchParams.get('name') ?? '同学';
   const studentClass = searchParams.get('class') ?? '';
+  const selectedSubtopic = searchParams.get('subtopic') ?? '';
 
   const topic = TOPICS.find(t => t.id === topicId);
   const colors = topic ? COLOR_MAP[topic.color] : COLOR_MAP.blue;
@@ -156,6 +163,10 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
   const [ttsEnabled, setTtsEnabled] = useState(true);
   const [ttsSupported, setTtsSupported] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+
+  // Restart confirmation
+  const [confirmRestart, setConfirmRestart] = useState(false);
+  const confirmTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ── Refs for stale-closure-safe callbacks ──
   const isLoadingRef = useRef(false);
@@ -268,7 +279,8 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
   /* ── Opening message ─────────────────────────────────────────────── */
   useEffect(() => {
     if (!topic || messages.length > 0) return;
-    const text = `${studentName}，你好！今天我们来聊聊《${topic.title}》这个话题。${topic.starterQuestion}`;
+    const angleLine = selectedSubtopic ? `，今天重点聊聊"${selectedSubtopic}"这个角度` : '';
+    const text = `${studentName}，你好！今天我们来聊聊${topic.title}${angleLine}。${topic.starterQuestion}`;
     const msg: Message = { role: 'assistant', content: text };
     setMessages([msg]);
     saveSession([msg]);
@@ -366,7 +378,7 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
       const res = await fetch('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ messages: updated, topicId: topic.id }),
+        body: JSON.stringify({ messages: updated, topicId: topic.id, subtopic: selectedSubtopic }),
       });
       const data = await res.json() as { reply?: string; error?: string };
       if (data.error) throw new Error(data.error);
@@ -432,12 +444,26 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
     setShowTip(false);
     setFeedback(null);
     if (!topic) return;
-    const text = `好，我们再来一次！继续聊《${topic.title}》。${topic.starterQuestion}`;
+    const angleLine = selectedSubtopic ? `，还是聊"${selectedSubtopic}"这个角度` : '';
+    const text = `好，我们再来一次！继续聊${topic.title}${angleLine}。${topic.starterQuestion}`;
     const msg: Message = { role: 'assistant', content: text };
     setMessages([msg]);
     saveSession([msg]);
     setTimeout(() => speakText(text), 400);
   }, [saveSession, speakText, stopListening, stopSpeaking, topic]);
+
+  /* ── Restart with confirmation ──────────────────────────────────── */
+  const handleRestartClick = useCallback(() => {
+    if (!confirmRestart) {
+      setConfirmRestart(true);
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      confirmTimerRef.current = setTimeout(() => setConfirmRestart(false), 3000);
+    } else {
+      if (confirmTimerRef.current) clearTimeout(confirmTimerRef.current);
+      setConfirmRestart(false);
+      handleRestart();
+    }
+  }, [confirmRestart, handleRestart]);
 
   /* ── Render guard ────────────────────────────────────────────────── */
   if (!topic) {
@@ -512,22 +538,18 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
           </button>
         )}
 
-        {canEnd && (
-          <button
-            onClick={handleEndSession}
-            className="flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-sm font-semibold text-white hover:bg-indigo-700 transition-colors whitespace-nowrap"
-          >
-            <PhoneOff className="h-3.5 w-3.5" />
-            结束
-          </button>
-        )}
-
         <button
-          onClick={handleRestart}
-          className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/60 transition-colors"
-          title="重新开始"
+          onClick={handleRestartClick}
+          className={cn(
+            'flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-semibold transition-all',
+            confirmRestart
+              ? 'bg-red-50 border border-red-200 text-red-600'
+              : 'hover:bg-white/60 text-slate-500'
+          )}
+          title={confirmRestart ? '再次点击确认重新开始' : '重新开始'}
         >
-          <RotateCcw className="h-4 w-4 text-slate-500" />
+          <RotateCcw className="h-4 w-4" />
+          {confirmRestart && <span className="font-chinese">确定？</span>}
         </button>
       </header>
 
@@ -622,7 +644,7 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
           </div>
         )}
 
-        {feedback && <FeedbackCard feedback={feedback} colors={colors} onRestart={handleRestart} />}
+        {feedback && <FeedbackCard feedback={feedback} colors={colors} onRestart={handleRestart} turns={userTurns} />}
 
         <div ref={scrollRef} />
       </div>
@@ -675,7 +697,21 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
 
           {/* Controls */}
           <div className="px-4 pb-4 pt-2">
-            <div className="flex items-center justify-center gap-5">
+            <div className="flex items-center justify-center gap-4">
+
+              {/* Text input toggle */}
+              <button
+                onClick={() => setShowTextInput(v => !v)}
+                className={cn(
+                  'flex h-11 w-11 items-center justify-center rounded-full border-2 transition-all',
+                  showTextInput
+                    ? cn(colors.border, colors.bg, colors.text)
+                    : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'
+                )}
+                title="文字输入"
+              >
+                <MessageSquare className="h-5 w-5" />
+              </button>
 
               {/* Big mic button — primary CTA */}
               {voiceSupported && (
@@ -705,30 +741,23 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
                 </button>
               )}
 
-              {/* Text input toggle */}
+              {/* End session — always visible; shows countdown until unlocked */}
               <button
-                onClick={() => setShowTextInput(v => !v)}
+                onClick={canEnd ? handleEndSession : undefined}
+                disabled={!canEnd || isLoading || isFetchingFeedback}
+                title={canEnd ? '结束练习，获取AI反馈' : `再 ${Math.max(0, 3 - userTurns)} 轮后可获取反馈`}
                 className={cn(
-                  'flex h-11 w-11 items-center justify-center rounded-full border-2 transition-all',
-                  showTextInput
-                    ? cn(colors.border, colors.bg, colors.text)
-                    : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'
+                  'flex h-11 flex-col items-center justify-center rounded-full px-3 border-2 transition-all gap-0',
+                  canEnd
+                    ? 'border-indigo-300 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 cursor-pointer'
+                    : 'border-slate-100 text-slate-300 cursor-default'
                 )}
-                title="文字输入"
               >
-                <MessageSquare className="h-5 w-5" />
+                <Star className="h-4 w-4" />
+                <span className="text-[10px] font-semibold font-chinese leading-tight mt-0.5">
+                  {canEnd ? '获取反馈' : `${Math.max(0, 3 - userTurns)}轮后`}
+                </span>
               </button>
-
-              {/* End session */}
-              {canEnd && (
-                <button
-                  onClick={handleEndSession}
-                  className="flex h-11 w-11 items-center justify-center rounded-full border-2 border-indigo-200 text-indigo-400 hover:border-indigo-400 hover:text-indigo-600 hover:bg-indigo-50 transition-all"
-                  title="结束并获取反馈"
-                >
-                  <Star className="h-5 w-5" />
-                </button>
-              )}
             </div>
 
             {/* Expandable text area */}

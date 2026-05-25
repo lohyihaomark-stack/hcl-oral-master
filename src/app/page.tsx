@@ -12,16 +12,19 @@ export default function Home() {
   const [selected, setSelected] = useState<string | null>(null);
   const [name, setName] = useState('');
   const [cls, setCls] = useState('');
+  const [subtopic, setSubtopic] = useState('');
   const [showModal, setShowModal] = useState(false);
 
   const handleTopicClick = (topicId: string) => {
     setSelected(topicId);
+    setSubtopic('');
     setShowModal(true);
   };
 
   const handleStart = () => {
     if (!name.trim()) return;
     const params = new URLSearchParams({ name: name.trim(), class: cls.trim() });
+    if (subtopic) params.set('subtopic', subtopic);
     router.push(`/practice/${selected}?${params.toString()}`);
   };
 
@@ -29,6 +32,7 @@ export default function Home() {
     setShowModal(false);
     setName('');
     setCls('');
+    setSubtopic('');
   };
 
   const topic = selected ? TOPICS.find(t => t.id === selected) : null;
@@ -136,6 +140,31 @@ export default function Home() {
                   className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-base outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
                 />
               </div>
+
+              {topic && (
+                <div>
+                  <label className="block text-sm font-semibold text-slate-600 mb-2">
+                    练习角度 <span className="text-slate-400 font-normal">（选填，不选则自由讨论）</span>
+                  </label>
+                  <div className="flex flex-wrap gap-2">
+                    {topic.subtopics.map(s => (
+                      <button
+                        key={s}
+                        type="button"
+                        onClick={() => setSubtopic(v => v === s ? '' : s)}
+                        className={cn(
+                          'rounded-full px-3 py-1.5 text-xs font-semibold font-chinese transition-all border-2',
+                          subtopic === s
+                            ? cn(c!.bg, c!.border, c!.text)
+                            : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
+                        )}
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
 
               <div className="flex gap-3 pt-1">
                 <button
