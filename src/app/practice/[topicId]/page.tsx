@@ -66,10 +66,11 @@ function SoundWave({ className }: { className?: string }) {
   );
 }
 
-function FeedbackCard({ feedback, colors, onRestart, turns }: {
+function FeedbackCard({ feedback, colors, onRestart, onChangeTopic, turns }: {
   feedback: Feedback;
   colors: (typeof COLOR_MAP)[keyof typeof COLOR_MAP];
   onRestart: () => void;
+  onChangeTopic: () => void;
   turns: number;
 }) {
   return (
@@ -113,15 +114,23 @@ function FeedbackCard({ feedback, colors, onRestart, turns }: {
         </div>
       )}
       <p className="text-base text-center text-slate-500 font-chinese italic">{feedback.overall}</p>
-      <button
-        onClick={onRestart}
-        className={cn(
-          'w-full rounded-xl py-3 text-base font-semibold font-chinese transition-all',
-          colors.bg, colors.border, 'border-2', colors.text, 'hover:opacity-80'
-        )}
-      >
-        再练一次 ↩
-      </button>
+      <div className="flex gap-3">
+        <button
+          onClick={onChangeTopic}
+          className="flex-1 rounded-xl py-3 text-base font-semibold font-chinese transition-all border-2 border-slate-200 text-slate-500 hover:bg-slate-50"
+        >
+          换个话题
+        </button>
+        <button
+          onClick={onRestart}
+          className={cn(
+            'flex-1 rounded-xl py-3 text-base font-semibold font-chinese transition-all',
+            colors.bg, colors.border, 'border-2', colors.text, 'hover:opacity-80'
+          )}
+        >
+          再练一次 ↩
+        </button>
+      </div>
     </div>
   );
 }
@@ -190,6 +199,9 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
       (window as unknown as { webkitSpeechRecognition?: typeof window.SpeechRecognition }).webkitSpeechRecognition;
     setVoiceSupported(!!SR);
     setTtsSupported(!!window.speechSynthesis);
+    // No speech recognition (e.g. iPhone Safari) → open the text input so the
+    // student isn't stranded with no visible way to answer.
+    if (!SR) setShowTextInput(true);
   }, []);
 
   // Auto-scroll
@@ -644,7 +656,7 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
           </div>
         )}
 
-        {feedback && <FeedbackCard feedback={feedback} colors={colors} onRestart={handleRestart} turns={userTurns} />}
+        {feedback && <FeedbackCard feedback={feedback} colors={colors} onRestart={handleRestart} onChangeTopic={() => router.push('/')} turns={userTurns} />}
 
         <div ref={scrollRef} />
       </div>
