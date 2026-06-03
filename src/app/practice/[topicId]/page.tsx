@@ -74,58 +74,66 @@ function FeedbackCard({ feedback, colors, onRestart, onChangeTopic, turns }: {
   turns: number;
 }) {
   return (
-    <div className="mx-2 my-4 rounded-2xl border-2 border-indigo-100 bg-gradient-to-br from-indigo-50 to-white p-5 space-y-4 shadow-sm">
+    <div className="my-4 rounded-3xl border border-slate-100 bg-white p-6 space-y-4 shadow-lift animate-scale-in">
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <Star className="h-5 w-5 text-indigo-500" />
-          <p className="text-base font-bold text-indigo-700">练习反馈</p>
+        <div className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-md">
+            <Star className="h-4 w-4 text-white fill-current" />
+          </div>
+          <p className="text-lg font-bold text-slate-800 font-chinese">练习反馈</p>
         </div>
-        <span className="rounded-full bg-indigo-100 px-2.5 py-1 text-xs font-semibold text-indigo-600 font-chinese">
+        <span className="rounded-full bg-indigo-50 px-3 py-1 text-xs font-semibold text-indigo-600 font-chinese">
           完成 {turns} 轮对话
         </span>
       </div>
-      <div className="rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3">
+      <div className="rounded-2xl bg-emerald-50/70 border border-emerald-100 px-4 py-3.5">
         <div className="flex items-start gap-2.5">
-          <TrendingUp className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-emerald-100">
+            <TrendingUp className="h-4 w-4 text-emerald-600" />
+          </div>
           <div>
-            <p className="text-xs font-bold text-emerald-600 uppercase tracking-wide mb-1">做得好</p>
-            <p className="text-base text-emerald-800 font-chinese leading-relaxed">{feedback.strength}</p>
+            <p className="text-xs font-bold text-emerald-600 mb-1 font-chinese">做得好 👍</p>
+            <p className="text-base text-emerald-900 font-chinese leading-relaxed">{feedback.strength}</p>
           </div>
         </div>
       </div>
-      <div className="rounded-xl bg-amber-50 border border-amber-200 px-4 py-3">
+      <div className="rounded-2xl bg-amber-50/70 border border-amber-100 px-4 py-3.5">
         <div className="flex items-start gap-2.5">
-          <Lightbulb className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+          <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-amber-100">
+            <Lightbulb className="h-4 w-4 text-amber-600" />
+          </div>
           <div>
-            <p className="text-xs font-bold text-amber-600 uppercase tracking-wide mb-1">可以改进</p>
-            <p className="text-base text-amber-800 font-chinese leading-relaxed">{feedback.improve}</p>
+            <p className="text-xs font-bold text-amber-600 mb-1 font-chinese">可以改进 ✨</p>
+            <p className="text-base text-amber-900 font-chinese leading-relaxed">{feedback.improve}</p>
           </div>
         </div>
       </div>
       {feedback.vocab && (
-        <div className="rounded-xl bg-violet-50 border border-violet-200 px-4 py-3">
+        <div className="rounded-2xl bg-violet-50/70 border border-violet-100 px-4 py-3.5">
           <div className="flex items-start gap-2.5">
-            <Repeat2 className="h-4 w-4 text-violet-600 shrink-0 mt-0.5" />
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-violet-100">
+              <Repeat2 className="h-4 w-4 text-violet-600" />
+            </div>
             <div>
-              <p className="text-xs font-bold text-violet-600 uppercase tracking-wide mb-1">词汇升级</p>
-              <p className="text-base text-violet-800 font-chinese leading-relaxed">{feedback.vocab}</p>
+              <p className="text-xs font-bold text-violet-600 mb-1 font-chinese">词汇升级 📚</p>
+              <p className="text-base text-violet-900 font-chinese leading-relaxed">{feedback.vocab}</p>
             </div>
           </div>
         </div>
       )}
-      <p className="text-base text-center text-slate-500 font-chinese italic">{feedback.overall}</p>
-      <div className="flex gap-3">
+      <p className="text-base text-center text-slate-500 font-chinese italic pt-1">{feedback.overall}</p>
+      <div className="flex gap-3 pt-1">
         <button
           onClick={onChangeTopic}
-          className="flex-1 rounded-xl py-3 text-base font-semibold font-chinese transition-all border-2 border-slate-200 text-slate-500 hover:bg-slate-50"
+          className="flex-1 rounded-2xl py-3 text-base font-semibold font-chinese transition-all border-2 border-slate-200 text-slate-500 hover:bg-slate-50"
         >
           换个话题
         </button>
         <button
           onClick={onRestart}
           className={cn(
-            'flex-1 rounded-xl py-3 text-base font-semibold font-chinese transition-all',
-            colors.bg, colors.border, 'border-2', colors.text, 'hover:opacity-80'
+            'flex-1 rounded-2xl py-3 text-base font-semibold font-chinese text-white transition-all bg-gradient-to-br shadow-md hover:opacity-90',
+            colors.gradient
           )}
         >
           再练一次 ↩
@@ -488,7 +496,7 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
 
   const userTurns = messages.filter(m => m.role === 'user').length;
   const canEnd = userTurns >= 3 && !isLoading && !isFetchingFeedback && !feedback;
-  const userBubbleColor = colors.text.replace('text-', 'bg-').replace('-700', '-600');
+  const userGradient = cn('bg-gradient-to-br', colors.gradient);
 
   // Index of the last AI message (for the speaking animation)
   let lastAiIdx = -1;
@@ -506,26 +514,26 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
     : '请输入你的回答';
 
   return (
-    <div className="flex flex-col h-screen bg-slate-50">
+    <div className="flex flex-col h-screen bg-gradient-to-b from-white via-slate-50 to-indigo-50/40">
 
       {/* ── Header ── */}
-      <header className={cn('shrink-0 border-b px-4 py-3 flex items-center gap-2', colors.bg, colors.border.replace('border', 'border-b'))}>
+      <header className="shrink-0 glass border-b border-white/60 px-3 sm:px-4 py-2.5 flex items-center gap-2">
         <button
           onClick={() => router.push('/')}
-          className="flex h-9 w-9 items-center justify-center rounded-lg hover:bg-white/60 transition-colors"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
         >
-          <ArrowLeft className="h-5 w-5 text-slate-600" />
+          <ArrowLeft className="h-5 w-5" />
         </button>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{topic.icon}</span>
-            <div>
-              <h1 className={cn('text-base font-bold font-chinese leading-tight', colors.text)}>{topic.title}</h1>
-              <p className="text-xs text-slate-500 leading-tight">
-                {studentName}{studentClass ? ` · ${studentClass}` : ''} · {userTurns} 轮
-              </p>
-            </div>
+        <div className="flex flex-1 min-w-0 items-center gap-2.5">
+          <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-xl shadow-md', colors.gradient, colors.glow)}>
+            {topic.icon}
+          </div>
+          <div className="min-w-0">
+            <h1 className="text-base font-bold font-chinese leading-tight text-slate-800 truncate">{topic.title}</h1>
+            <p className="text-xs text-slate-400 leading-tight truncate">
+              {studentName}{studentClass ? ` · ${studentClass}` : ''} · {userTurns} 轮
+            </p>
           </div>
         </div>
 
@@ -540,10 +548,10 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
             }}
             title={ttsEnabled ? '关闭语音' : '开启语音'}
             className={cn(
-              'flex h-9 w-9 items-center justify-center rounded-lg border transition-all',
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl transition-all',
               ttsEnabled
-                ? cn('border-2', colors.border, colors.bg, colors.text)
-                : 'border-slate-200 text-slate-400 hover:bg-slate-50'
+                ? cn('bg-gradient-to-br text-white shadow-md', colors.gradient)
+                : 'text-slate-400 hover:bg-slate-100'
             )}
           >
             {ttsEnabled ? <Volume2 className="h-4 w-4" /> : <VolumeX className="h-4 w-4" />}
@@ -553,10 +561,10 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
         <button
           onClick={handleRestartClick}
           className={cn(
-            'flex items-center gap-1 rounded-lg px-2.5 py-2 text-xs font-semibold transition-all',
+            'flex shrink-0 items-center gap-1 rounded-xl px-2.5 py-2 text-xs font-semibold transition-all',
             confirmRestart
-              ? 'bg-red-50 border border-red-200 text-red-600'
-              : 'hover:bg-white/60 text-slate-500'
+              ? 'bg-red-50 text-red-600 ring-1 ring-red-200'
+              : 'text-slate-400 hover:bg-slate-100'
           )}
           title={confirmRestart ? '再次点击确认重新开始' : '重新开始'}
         >
@@ -566,41 +574,36 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
       </header>
 
       {/* ── Messages ── */}
-      <div className="flex-1 overflow-y-auto px-4 py-5 space-y-5">
+      <div className="flex-1 overflow-y-auto scrollbar-soft px-4 py-6">
+        <div className="mx-auto max-w-2xl space-y-5">
         {messages.map((msg, i) => (
-          <div key={i} className={cn('flex gap-3', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
+          <div key={i} className={cn('flex gap-2.5 animate-fade-up', msg.role === 'user' ? 'justify-end' : 'justify-start')}>
 
             {/* AI avatar with speaking pulse */}
             {msg.role === 'assistant' && (
               <div className="relative mt-1 shrink-0">
                 {isSpeaking && i === lastAiIdx && (
                   <>
-                    <span className={cn(
-                      'absolute inset-0 rounded-full animate-ping opacity-50',
-                      colors.bg
-                    )} />
-                    <span className={cn(
-                      'absolute -inset-1.5 rounded-full animate-ping opacity-25',
-                      colors.bg
-                    )} style={{ animationDelay: '0.35s' }} />
+                    <span className={cn('absolute inset-0 rounded-2xl bg-gradient-to-br animate-ping opacity-40', colors.gradient)} />
+                    <span className={cn('absolute -inset-1.5 rounded-2xl bg-gradient-to-br animate-ping opacity-20', colors.gradient)} style={{ animationDelay: '0.35s' }} />
                   </>
                 )}
                 <div className={cn(
-                  'relative z-10 flex h-11 w-11 items-center justify-center rounded-full border-2',
-                  colors.bg, colors.border,
+                  'relative z-10 flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br shadow-md',
+                  colors.gradient, colors.glow,
                   isSpeaking && i === lastAiIdx ? 'shadow-lg' : ''
                 )}>
-                  <BookOpen className={cn('h-5 w-5', colors.text)} />
+                  <BookOpen className="h-5 w-5 text-white" />
                 </div>
               </div>
             )}
 
             {/* Bubble */}
             <div className={cn(
-              'max-w-[78%] rounded-2xl px-5 py-4 text-base font-chinese leading-[1.9] whitespace-pre-wrap shadow-sm',
+              'max-w-[80%] px-5 py-3.5 text-base font-chinese leading-[1.85] whitespace-pre-wrap',
               msg.role === 'assistant'
-                ? 'rounded-tl-sm bg-white border border-slate-200 text-slate-800'
-                : cn('rounded-tr-sm text-white', userBubbleColor)
+                ? 'rounded-3xl rounded-tl-md bg-white border border-slate-100 text-slate-800 shadow-soft'
+                : cn('rounded-3xl rounded-tr-md text-white shadow-md', userGradient, colors.glow)
             )}>
               {/* Inline sound-wave inside latest AI bubble while speaking */}
               {msg.role === 'assistant' && isSpeaking && i === lastAiIdx && (
@@ -624,7 +627,7 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
 
             {/* User avatar */}
             {msg.role === 'user' && (
-              <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-slate-700 text-white text-base font-bold mt-1">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 text-white text-base font-bold mt-1 shadow-md">
                 {studentName.slice(0, 1)}
               </div>
             )}
@@ -633,11 +636,11 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
 
         {/* Typing indicator */}
         {(isLoading || isFetchingFeedback) && (
-          <div className="flex gap-3 justify-start">
-            <div className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-full border-2', colors.bg, colors.border)}>
-              <BookOpen className={cn('h-5 w-5', colors.text)} />
+          <div className="flex gap-2.5 justify-start animate-fade-in">
+            <div className={cn('flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br shadow-md', colors.gradient)}>
+              <BookOpen className="h-5 w-5 text-white" />
             </div>
-            <div className="rounded-2xl rounded-tl-sm bg-white border border-slate-200 px-5 py-4 shadow-sm">
+            <div className="rounded-3xl rounded-tl-md bg-white border border-slate-100 px-5 py-4 shadow-soft">
               <TypingDots />
               {isFetchingFeedback && (
                 <p className="text-sm text-slate-400 mt-2 font-chinese">正在生成练习反馈…</p>
@@ -648,8 +651,8 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
 
         {/* Tip card */}
         {showTip && !isLoading && (
-          <div className="flex justify-center">
-            <div className="flex items-start gap-2.5 rounded-xl bg-amber-50 border border-amber-200 px-5 py-3.5 max-w-sm">
+          <div className="flex justify-center animate-scale-in">
+            <div className="flex items-start gap-2.5 rounded-2xl bg-amber-50 border border-amber-100 px-5 py-3.5 max-w-sm shadow-soft">
               <Lightbulb className="h-5 w-5 text-amber-500 shrink-0 mt-0.5" />
               <p className="text-base text-amber-700 font-chinese leading-relaxed">{TIPS[tipIndex]}</p>
             </div>
@@ -659,11 +662,12 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
         {feedback && <FeedbackCard feedback={feedback} colors={colors} onRestart={handleRestart} onChangeTopic={() => router.push('/')} turns={userTurns} />}
 
         <div ref={scrollRef} />
+        </div>
       </div>
 
       {/* ── Voice-first input bar ── */}
       {!feedback && (
-        <div className="shrink-0 border-t border-slate-200 bg-white">
+        <div className="shrink-0 glass border-t border-white/60">
 
           {/* Mic permission error banner */}
           {micError && (
@@ -715,10 +719,10 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
               <button
                 onClick={() => setShowTextInput(v => !v)}
                 className={cn(
-                  'flex h-11 w-11 items-center justify-center rounded-full border-2 transition-all',
+                  'flex h-12 w-12 items-center justify-center rounded-2xl transition-all',
                   showTextInput
-                    ? cn(colors.border, colors.bg, colors.text)
-                    : 'border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600'
+                    ? cn('bg-gradient-to-br text-white shadow-md', userGradient)
+                    : 'bg-white text-slate-400 ring-1 ring-slate-200 hover:text-slate-600 hover:ring-slate-300'
                 )}
                 title="文字输入"
               >
@@ -732,22 +736,22 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
                   disabled={isLoading || isSpeaking || !!micError}
                   title={micError ? '麦克风权限被阻止，请刷新页面' : isListening ? '完成，提交回答' : '开始说话'}
                   className={cn(
-                    'relative flex h-[72px] w-[72px] shrink-0 items-center justify-center rounded-full transition-all duration-200 shadow-md',
+                    'relative flex h-[76px] w-[76px] shrink-0 items-center justify-center rounded-full transition-all duration-200',
                     isListening
-                      ? 'bg-red-500 text-white scale-110 shadow-lg shadow-red-200'
+                      ? 'bg-gradient-to-br from-rose-500 to-red-600 text-white scale-110 shadow-glow'
                       : isLoading || isSpeaking
-                      ? 'bg-slate-100 text-slate-300 cursor-not-allowed shadow-none'
-                      : cn('text-white shadow-lg hover:scale-105 active:scale-95', userBubbleColor)
+                      ? 'bg-slate-100 text-slate-300 cursor-not-allowed'
+                      : cn('text-white shadow-glow hover:scale-105 active:scale-95 bg-gradient-to-br', colors.gradient)
                   )}
                 >
                   {isListening && (
                     <>
-                      <span className="absolute inset-0 rounded-full bg-red-400 animate-ping opacity-30" />
-                      <span className="absolute -inset-2 rounded-full bg-red-300 animate-ping opacity-15" style={{ animationDelay: '0.5s' }} />
+                      <span className="absolute inset-0 rounded-full bg-rose-400 animate-ping opacity-30" />
+                      <span className="absolute -inset-2 rounded-full bg-rose-300 animate-ping opacity-15" style={{ animationDelay: '0.5s' }} />
                     </>
                   )}
                   {isListening
-                    ? <Square className="h-8 w-8 fill-current relative z-10" />
+                    ? <Square className="h-7 w-7 fill-current relative z-10" />
                     : <Mic className="h-8 w-8 relative z-10" />
                   }
                 </button>
@@ -759,13 +763,13 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
                 disabled={!canEnd || isLoading || isFetchingFeedback}
                 title={canEnd ? '结束练习，获取AI反馈' : `再 ${Math.max(0, 3 - userTurns)} 轮后可获取反馈`}
                 className={cn(
-                  'flex h-11 flex-col items-center justify-center rounded-full px-3 border-2 transition-all gap-0',
+                  'flex h-12 flex-col items-center justify-center rounded-2xl px-3 transition-all gap-0',
                   canEnd
-                    ? 'border-indigo-300 text-indigo-600 bg-indigo-50 hover:bg-indigo-100 cursor-pointer'
-                    : 'border-slate-100 text-slate-300 cursor-default'
+                    ? 'bg-gradient-to-br from-indigo-500 to-violet-600 text-white shadow-md hover:scale-105 cursor-pointer'
+                    : 'bg-white text-slate-300 ring-1 ring-slate-200 cursor-default'
                 )}
               >
-                <Star className="h-4 w-4" />
+                <Star className={cn('h-4 w-4', canEnd && 'fill-current')} />
                 <span className="text-[10px] font-semibold font-chinese leading-tight mt-0.5">
                   {canEnd ? '获取反馈' : `${Math.max(0, 3 - userTurns)}轮后`}
                 </span>
@@ -774,7 +778,7 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
 
             {/* Expandable text area */}
             {showTextInput && (
-              <div className="flex gap-2 items-end mt-3 max-w-lg mx-auto">
+              <div className="flex gap-2 items-end mt-4 max-w-lg mx-auto animate-scale-in">
                 <textarea
                   ref={inputRef}
                   rows={2}
@@ -782,16 +786,16 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
                   onChange={e => setInput(e.target.value)}
                   placeholder="用华文输入回答…"
                   disabled={isLoading}
-                  className="flex-1 resize-none rounded-xl border-2 border-slate-200 bg-slate-50 px-4 py-3 text-base font-chinese outline-none focus:border-indigo-400 focus:bg-white focus:ring-2 focus:ring-indigo-100 transition-all disabled:opacity-50 leading-relaxed"
+                  className="flex-1 resize-none rounded-2xl border-2 border-slate-200 bg-white/80 px-4 py-3 text-base font-chinese outline-none focus:border-indigo-400 focus:bg-white focus:ring-4 focus:ring-indigo-100 transition-all disabled:opacity-50 leading-relaxed"
                 />
                 <button
                   onClick={() => sendMessage(input)}
                   disabled={!input.trim() || isLoading}
                   className={cn(
-                    'flex h-12 w-12 shrink-0 items-center justify-center rounded-xl transition-all border-2',
+                    'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl transition-all',
                     input.trim() && !isLoading
-                      ? cn('text-white border-transparent shadow-sm hover:opacity-90', userBubbleColor)
-                      : 'bg-slate-100 border-slate-200 text-slate-300 cursor-not-allowed'
+                      ? cn('text-white shadow-md hover:opacity-90 bg-gradient-to-br', userGradient)
+                      : 'bg-slate-100 text-slate-300 cursor-not-allowed'
                   )}
                 >
                   {isLoading ? <Loader2 className="h-5 w-5 animate-spin" /> : <Send className="h-5 w-5" />}
@@ -799,8 +803,8 @@ export default function PracticePage({ params }: { params: Promise<{ topicId: st
               </div>
             )}
 
-            <p className="text-center text-xs text-slate-300 mt-3">
-              AI助手仅供练习参考，不代表SEAB考试标准
+            <p className="text-center text-xs text-slate-300 mt-3 font-chinese">
+              AI 助手仅供练习参考，不代表 SEAB 考试标准
             </p>
           </div>
         </div>

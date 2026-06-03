@@ -2,9 +2,8 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { BookOpen, ChevronRight, GraduationCap, Users } from 'lucide-react';
+import { Sparkles, ChevronRight, Mic, GraduationCap, ArrowRight, X } from 'lucide-react';
 import { TOPICS, COLOR_MAP } from '@/lib/topics';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
 export default function Home() {
@@ -39,84 +38,118 @@ export default function Home() {
   const c = topic ? COLOR_MAP[topic.color] : null;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="border-b border-slate-200 bg-white/80 backdrop-blur-sm sticky top-0 z-10">
-        <div className="mx-auto max-w-5xl px-5 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-600">
-              <BookOpen className="h-4 w-4 text-white" />
+    <div className="min-h-screen aurora">
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-20 glass border-b border-white/60">
+        <div className="mx-auto max-w-6xl px-5 py-3 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 to-violet-600 shadow-glow">
+              <Mic className="h-5 w-5 text-white" strokeWidth={2.5} />
             </div>
             <div>
-              <h1 className="text-sm font-bold text-slate-800 leading-tight">华文口语练习</h1>
-              <p className="text-[10px] text-slate-400 leading-tight">Higher Chinese Speaking Practice</p>
+              <h1 className="text-sm font-bold text-slate-800 leading-tight font-chinese">华文口语练习</h1>
+              <p className="text-[10px] text-slate-400 leading-tight tracking-wide">HIGHER CHINESE · SPEAKING</p>
             </div>
           </div>
           <button
             onClick={() => router.push('/teacher')}
-            className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 transition-colors"
+            className="flex items-center gap-1.5 rounded-full border border-slate-200 bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-slate-600 hover:text-indigo-600 hover:border-indigo-200 transition-all"
           >
-            <Users className="h-3.5 w-3.5" />
-            教师仪表板
+            <GraduationCap className="h-3.5 w-3.5" />
+            教师入口
           </button>
         </div>
       </header>
 
-      {/* Hero */}
-      <div className="mx-auto max-w-5xl px-5 py-10 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full bg-indigo-100 px-4 py-1.5 text-xs font-semibold text-indigo-700 mb-4">
-          <GraduationCap className="h-3.5 w-3.5" />
-          SEAB Higher Chinese Oral Practice
+      {/* ── Hero ── */}
+      <section className="mx-auto max-w-6xl px-5 pt-12 pb-8 text-center">
+        <div className="inline-flex items-center gap-1.5 rounded-full border border-indigo-100 bg-white/70 px-3.5 py-1.5 text-xs font-semibold text-indigo-600 mb-5 animate-fade-up shadow-soft">
+          <Sparkles className="h-3.5 w-3.5" />
+          SEAB 高级华文口试 · AI 对话练习
         </div>
-        <h2 className="text-4xl font-black text-slate-800 mb-3 font-chinese">选择一个话题，开始练习！</h2>
-        <p className="text-slate-500 text-base max-w-md mx-auto font-chinese">
-          与AI助手用华文对话，练习口语表达，获得即时反馈。选一个你感兴趣的话题开始吧。
+        <h2
+          className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 leading-[1.12] mb-4 font-chinese animate-fade-up"
+          style={{ animationDelay: '60ms' }}
+        >
+          选个话题，<span className="text-gradient whitespace-nowrap">开口说华文</span>
+        </h2>
+        <p
+          className="text-slate-500 text-base sm:text-lg max-w-xl mx-auto font-chinese leading-relaxed animate-fade-up"
+          style={{ animationDelay: '120ms' }}
+        >
+          和 AI 伙伴像朋友一样聊天，练习口语表达，结束后获得即时反馈。挑一个你感兴趣的话题，现在就开始吧。
         </p>
-      </div>
+      </section>
 
-      {/* Topic Grid */}
-      <div className="mx-auto max-w-5xl px-5 pb-16">
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          {TOPICS.map((t) => {
+      {/* ── Topic grid ── */}
+      <main className="mx-auto max-w-6xl px-5 pb-20">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3.5 sm:gap-4">
+          {TOPICS.map((t, i) => {
             const colors = COLOR_MAP[t.color];
             return (
               <button
                 key={t.id}
                 onClick={() => handleTopicClick(t.id)}
-                className={cn(
-                  'group relative flex flex-col items-center gap-2.5 rounded-2xl border-2 p-4 text-center transition-all duration-200 cursor-pointer',
-                  colors.bg, colors.border, colors.hover,
-                  'hover:shadow-md hover:-translate-y-0.5 active:translate-y-0'
-                )}
+                style={{ animationDelay: `${140 + i * 45}ms` }}
+                className="group relative flex flex-col items-start gap-3 rounded-3xl border border-slate-100 bg-white p-5 text-left shadow-soft transition-all duration-300 hover:-translate-y-1 hover:shadow-lift animate-fade-up"
               >
-                <span className="text-4xl">{t.icon}</span>
-                <div>
-                  <p className={cn('text-base font-bold font-chinese', colors.text)}>{t.title}</p>
-                  <p className="text-xs text-slate-500 mt-1 leading-snug line-clamp-2 font-chinese">{t.description}</p>
+                <div className={cn(
+                  'flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br text-3xl shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3',
+                  colors.gradient, colors.glow
+                )}>
+                  {t.icon}
                 </div>
-                <div className={cn('rounded-full px-2.5 py-1 text-xs font-semibold', colors.badge)}>
-                  {t.subtopics.length} 个角度
+                <div className="flex-1">
+                  <p className="text-lg font-bold text-slate-800 font-chinese leading-tight">{t.title}</p>
+                  <p className="text-xs text-slate-400 mt-1.5 leading-relaxed line-clamp-2 font-chinese">{t.description}</p>
                 </div>
-                <ChevronRight className={cn('absolute right-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity', colors.text)} />
+                <div className="flex w-full items-center justify-between pt-1">
+                  <span className={cn('rounded-full px-2.5 py-1 text-[11px] font-semibold', colors.badge)}>
+                    {t.subtopics.length} 个角度
+                  </span>
+                  <span className="flex h-7 w-7 items-center justify-center rounded-full bg-slate-50 text-slate-400 transition-all duration-300 group-hover:translate-x-0.5 group-hover:bg-slate-900 group-hover:text-white">
+                    <ArrowRight className="h-3.5 w-3.5" />
+                  </span>
+                </div>
               </button>
             );
           })}
         </div>
-      </div>
 
-      {/* Modal — name entry */}
+        <p className="text-center text-xs text-slate-300 mt-10 font-chinese">
+          AI 助手仅供练习参考，不代表 SEAB 考试标准
+        </p>
+      </main>
+
+      {/* ── Start modal ── */}
       {showModal && topic && c && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm" onClick={closeModal}>
-          <div className="w-full max-w-sm rounded-2xl bg-white shadow-2xl overflow-hidden" onClick={e => e.stopPropagation()}>
-            <div className={cn('px-6 py-6', c.bg)}>
-              <p className="text-4xl mb-3">{topic.icon}</p>
-              <h3 className={cn('text-xl font-bold font-chinese', c.text)}>{topic.title}</h3>
-              <p className="text-sm text-slate-500 mt-1 font-chinese">{topic.description}</p>
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-slate-900/40 backdrop-blur-sm animate-fade-in"
+          onClick={closeModal}
+        >
+          <div
+            className="w-full max-w-md rounded-t-3xl sm:rounded-3xl bg-white shadow-2xl overflow-hidden animate-scale-in"
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className={cn('relative px-6 pt-7 pb-6 bg-gradient-to-br', c.soft)}>
+              <button
+                onClick={closeModal}
+                className="absolute right-4 top-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/60 text-slate-500 hover:bg-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+              <div className={cn('flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br text-4xl shadow-lg mb-3', c.gradient, c.glow)}>
+                {topic.icon}
+              </div>
+              <h3 className="text-2xl font-bold text-slate-800 font-chinese">{topic.title}</h3>
+              <p className="text-sm text-slate-500 mt-1 font-chinese leading-relaxed">{topic.description}</p>
             </div>
 
-            <div className="px-6 py-6 space-y-5">
+            {/* Modal body */}
+            <div className="px-6 py-6 space-y-5 max-h-[55vh] overflow-y-auto scrollbar-soft">
               <div>
-                <label className="block text-sm font-semibold text-slate-600 mb-2">你的名字 *</label>
+                <label className="block text-sm font-semibold text-slate-700 mb-2 font-chinese">你的名字 <span className="text-rose-400">*</span></label>
                 <input
                   type="text"
                   autoFocus
@@ -124,11 +157,11 @@ export default function Home() {
                   value={name}
                   onChange={e => setName(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleStart()}
-                  className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-base outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 font-chinese"
+                  className="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 text-base outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all font-chinese"
                 />
               </div>
               <div>
-                <label className="block text-sm font-semibold text-slate-600 mb-2">
+                <label className="block text-sm font-semibold text-slate-700 mb-2 font-chinese">
                   班级 <span className="text-slate-400 font-normal">（选填）</span>
                 </label>
                 <input
@@ -137,46 +170,48 @@ export default function Home() {
                   value={cls}
                   onChange={e => setCls(e.target.value)}
                   onKeyDown={e => e.key === 'Enter' && handleStart()}
-                  className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 text-base outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100"
+                  className="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 text-base outline-none focus:border-indigo-400 focus:ring-4 focus:ring-indigo-100 transition-all"
                 />
               </div>
 
-              {topic && (
-                <div>
-                  <label className="block text-sm font-semibold text-slate-600 mb-2">
-                    练习角度 <span className="text-slate-400 font-normal">（选填，不选则自由讨论）</span>
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {topic.subtopics.map(s => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() => setSubtopic(v => v === s ? '' : s)}
-                        className={cn(
-                          'rounded-full px-3 py-1.5 text-xs font-semibold font-chinese transition-all border-2',
-                          subtopic === s
-                            ? cn(c!.bg, c!.border, c!.text)
-                            : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700'
-                        )}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                  </div>
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2 font-chinese">
+                  练习角度 <span className="text-slate-400 font-normal">（选填，不选则自由讨论）</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {topic.subtopics.map(s => (
+                    <button
+                      key={s}
+                      type="button"
+                      onClick={() => setSubtopic(v => v === s ? '' : s)}
+                      className={cn(
+                        'rounded-full px-3.5 py-2 text-xs font-semibold font-chinese transition-all border-2',
+                        subtopic === s
+                          ? cn('bg-gradient-to-br text-white border-transparent shadow-md', c.gradient)
+                          : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 bg-white'
+                      )}
+                    >
+                      {s}
+                    </button>
+                  ))}
                 </div>
-              )}
-
-              <div className="flex gap-3 pt-1">
-                <button
-                  onClick={closeModal}
-                  className="flex-1 rounded-xl border-2 border-slate-200 py-3 text-base text-slate-500 hover:bg-slate-50 transition-colors"
-                >
-                  取消
-                </button>
-                <Button className="flex-1 gap-1.5 text-base py-3 h-auto" disabled={!name.trim()} onClick={handleStart}>
-                  开始练习 <ChevronRight className="h-4 w-4" />
-                </Button>
               </div>
+            </div>
+
+            {/* Modal footer */}
+            <div className="px-6 pb-6 pt-1">
+              <button
+                disabled={!name.trim()}
+                onClick={handleStart}
+                className={cn(
+                  'flex w-full items-center justify-center gap-2 rounded-2xl py-3.5 text-base font-bold text-white font-chinese transition-all',
+                  name.trim()
+                    ? cn('bg-gradient-to-br shadow-lg hover:opacity-90 hover:scale-[1.01] active:scale-100', c.gradient)
+                    : 'bg-slate-200 text-slate-400 cursor-not-allowed'
+                )}
+              >
+                开始练习 <ChevronRight className="h-5 w-5" />
+              </button>
             </div>
           </div>
         </div>

@@ -30,26 +30,70 @@
 @layer base {
   * { @apply border-border; }
   body {
-    @apply bg-background text-foreground;
+    @apply text-foreground;
+    font-family: var(--font-inter), 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', system-ui, sans-serif;
     font-feature-settings: "rlig" 1, "calt" 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
-/* Chinese font optimisation */
+/* Chinese text — slightly looser leading for readability */
 .font-chinese {
   font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', 'Hiragino Sans GB', sans-serif;
-  line-height: 1.8;
+  line-height: 1.75;
 }
 
-/* Ensure Chinese text in all elements uses appropriate fonts */
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans SC', sans-serif;
+/* ── Brand helpers ─────────────────────────────────────────────── */
+
+/* Aurora mesh background — soft coloured glows over near-white */
+.aurora {
+  background-color: #fbfbfe;
+  background-image:
+    radial-gradient(42rem 42rem at 12% -8%, rgba(129, 140, 248, 0.18), transparent 60%),
+    radial-gradient(38rem 38rem at 105% 5%, rgba(167, 139, 250, 0.16), transparent 60%),
+    radial-gradient(34rem 34rem at 70% 110%, rgba(56, 189, 248, 0.12), transparent 60%);
 }
 
-/* Smooth scroll for exam workspace */
+/* Frosted glass surface */
+.glass {
+  background-color: rgba(255, 255, 255, 0.72);
+  backdrop-filter: saturate(180%) blur(14px);
+  -webkit-backdrop-filter: saturate(180%) blur(14px);
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 50%, #6366f1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ── Scrollbar ─────────────────────────────────────────────────── */
 * { scroll-behavior: smooth; }
 
-/* Audio element theming */
-audio::-webkit-media-controls-panel {
-  background-color: #f1f5f9;
+.scrollbar-soft::-webkit-scrollbar { width: 8px; height: 8px; }
+.scrollbar-soft::-webkit-scrollbar-thumb {
+  background: rgba(100, 116, 139, 0.25);
+  border-radius: 9999px;
+}
+.scrollbar-soft::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.4);
+}
+.scrollbar-soft::-webkit-scrollbar-track { background: transparent; }
+
+/* Hide scrollbar but keep scroll */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+.no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Respect reduced-motion: collapse entrance animations to final state */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

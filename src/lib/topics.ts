@@ -101,15 +101,27 @@ export const TOPICS: Topic[] = [
   },
 ];
 
-export const COLOR_MAP: Record<string, { bg: string; border: string; text: string; badge: string; hover: string }> = {
-  blue:   { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-700',   badge: 'bg-blue-100 text-blue-700',   hover: 'hover:bg-blue-100 hover:border-blue-300' },
-  green:  { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700',  badge: 'bg-green-100 text-green-700',  hover: 'hover:bg-green-100 hover:border-green-300' },
-  red:    { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-700',    badge: 'bg-red-100 text-red-700',    hover: 'hover:bg-red-100 hover:border-red-300' },
-  amber:  { bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-700',  badge: 'bg-amber-100 text-amber-700',  hover: 'hover:bg-amber-100 hover:border-amber-300' },
-  purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', badge: 'bg-purple-100 text-purple-700', hover: 'hover:bg-purple-100 hover:border-purple-300' },
-  orange: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', badge: 'bg-orange-100 text-orange-700', hover: 'hover:bg-orange-100 hover:border-orange-300' },
-  teal:   { bg: 'bg-teal-50',   border: 'border-teal-200',   text: 'text-teal-700',   badge: 'bg-teal-100 text-teal-700',   hover: 'hover:bg-teal-100 hover:border-teal-300' },
-  rose:   { bg: 'bg-rose-50',   border: 'border-rose-200',   text: 'text-rose-700',   badge: 'bg-rose-100 text-rose-700',   hover: 'hover:bg-rose-100 hover:border-rose-300' },
-  cyan:   { bg: 'bg-cyan-50',   border: 'border-cyan-200',   text: 'text-cyan-700',   badge: 'bg-cyan-100 text-cyan-700',   hover: 'hover:bg-cyan-100 hover:border-cyan-300' },
-  indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-700', hover: 'hover:bg-indigo-100 hover:border-indigo-300' },
+export interface TopicColors {
+  bg: string; border: string; text: string; badge: string; hover: string;
+  /** Vivid gradient for icon tiles, primary buttons, user bubbles */
+  gradient: string;
+  /** Soft gradient wash for surfaces */
+  soft: string;
+  /** Solid mid-tone (e.g. bg-blue-600) for accents */
+  solid: string;
+  /** Coloured shadow tint */
+  glow: string;
+}
+
+export const COLOR_MAP: Record<string, TopicColors> = {
+  blue:   { bg: 'bg-blue-50',   border: 'border-blue-200',   text: 'text-blue-700',   badge: 'bg-blue-100 text-blue-700',   hover: 'hover:bg-blue-100 hover:border-blue-300',   gradient: 'from-sky-400 to-blue-600',      soft: 'from-sky-50 to-blue-50',      solid: 'bg-blue-600',   glow: 'shadow-blue-500/25' },
+  green:  { bg: 'bg-green-50',  border: 'border-green-200',  text: 'text-green-700',  badge: 'bg-green-100 text-green-700',  hover: 'hover:bg-green-100 hover:border-green-300', gradient: 'from-emerald-400 to-green-600', soft: 'from-emerald-50 to-green-50', solid: 'bg-green-600',  glow: 'shadow-emerald-500/25' },
+  red:    { bg: 'bg-red-50',    border: 'border-red-200',    text: 'text-red-700',    badge: 'bg-red-100 text-red-700',    hover: 'hover:bg-red-100 hover:border-red-300',    gradient: 'from-rose-400 to-red-600',      soft: 'from-rose-50 to-red-50',      solid: 'bg-red-600',    glow: 'shadow-rose-500/25' },
+  amber:  { bg: 'bg-amber-50',  border: 'border-amber-200',  text: 'text-amber-700',  badge: 'bg-amber-100 text-amber-700',  hover: 'hover:bg-amber-100 hover:border-amber-300', gradient: 'from-amber-400 to-orange-500',  soft: 'from-amber-50 to-orange-50',  solid: 'bg-amber-500',  glow: 'shadow-amber-500/25' },
+  purple: { bg: 'bg-purple-50', border: 'border-purple-200', text: 'text-purple-700', badge: 'bg-purple-100 text-purple-700', hover: 'hover:bg-purple-100 hover:border-purple-300', gradient: 'from-violet-400 to-purple-600', soft: 'from-violet-50 to-purple-50', solid: 'bg-purple-600', glow: 'shadow-violet-500/25' },
+  orange: { bg: 'bg-orange-50', border: 'border-orange-200', text: 'text-orange-700', badge: 'bg-orange-100 text-orange-700', hover: 'hover:bg-orange-100 hover:border-orange-300', gradient: 'from-orange-400 to-rose-500',   soft: 'from-orange-50 to-rose-50',   solid: 'bg-orange-500', glow: 'shadow-orange-500/25' },
+  teal:   { bg: 'bg-teal-50',   border: 'border-teal-200',   text: 'text-teal-700',   badge: 'bg-teal-100 text-teal-700',   hover: 'hover:bg-teal-100 hover:border-teal-300',   gradient: 'from-teal-400 to-cyan-600',     soft: 'from-teal-50 to-cyan-50',     solid: 'bg-teal-600',   glow: 'shadow-teal-500/25' },
+  rose:   { bg: 'bg-rose-50',   border: 'border-rose-200',   text: 'text-rose-700',   badge: 'bg-rose-100 text-rose-700',   hover: 'hover:bg-rose-100 hover:border-rose-300',   gradient: 'from-rose-400 to-pink-600',     soft: 'from-rose-50 to-pink-50',     solid: 'bg-rose-600',   glow: 'shadow-pink-500/25' },
+  cyan:   { bg: 'bg-cyan-50',   border: 'border-cyan-200',   text: 'text-cyan-700',   badge: 'bg-cyan-100 text-cyan-700',   hover: 'hover:bg-cyan-100 hover:border-cyan-300',   gradient: 'from-cyan-400 to-sky-600',      soft: 'from-cyan-50 to-sky-50',      solid: 'bg-cyan-600',   glow: 'shadow-cyan-500/25' },
+  indigo: { bg: 'bg-indigo-50', border: 'border-indigo-200', text: 'text-indigo-700', badge: 'bg-indigo-100 text-indigo-700', hover: 'hover:bg-indigo-100 hover:border-indigo-300', gradient: 'from-indigo-400 to-violet-600', soft: 'from-indigo-50 to-violet-50', solid: 'bg-indigo-600', glow: 'shadow-indigo-500/25' },
 };
