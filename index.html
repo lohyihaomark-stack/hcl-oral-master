@@ -219,6 +219,14 @@
               </div>
               <div class="flex items-center gap-2">
                 <button
+                  x-show="curSet(cat).generated"
+                  @click="deleteCurrentSet(cat)"
+                  title="删除这组 AI 原创题目"
+                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-slate-400 bg-slate-100 hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95"
+                >
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+                <button
                   @click="refreshSet(cat)"
                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95"
                 >
@@ -257,6 +265,9 @@
             <p class="mt-2 text-[11px] text-slate-400">
               <span class="font-semibold text-slate-500">换一篇</span> = 切换题库里的已有文章；
               <span class="font-semibold text-fuchsia-600">AI 出新题</span> = 让 Claude 现场原创一套全新题目（需已设置 API 密钥），可无限出题。
+              <span class="text-slate-300">·</span>
+              AI 原创题目会<span class="font-semibold text-emerald-600">自动保存到本机浏览器</span>，日积月累可攒成上百篇题库（本机已存
+              <span class="font-bold text-emerald-600" x-text="generatedCount"></span> 组）。
             </p>
           </div>
 
@@ -645,6 +656,26 @@
             });
           });
 
+          // restore previously AI-generated sets saved on this device
+          const saved = this.loadGenerated();
+          this.categories.forEach((cat) => {
+            const gen = saved[cat.id];
+            if (!Array.isArray(gen)) return;
+            gen.forEach((set) => {
+              if (!set || !set.passage || !Array.isArray(set.questions) || !set.questions.length) return;
+              set.generated = true;
+              cat.sets.push(set);
+              set.questions.forEach((q) => {
+                if (!q || !q.id) return;
+                this.state[q.id] = {
+                  answer: '', loading: false, error: null, ai: null,
+                  showModel: false, showSelfCheck: false,
+                  checks: (q.criteria || []).map(() => false),
+                };
+              });
+            });
+          });
+
           this.refreshIcons();
           // re-render icons whenever the view changes
           this.$watch('activeCat', () => this.refreshIcons());
@@ -667,6 +698,61 @@
           while (next === cur) next = Math.floor(Math.random() * n);
           this.catSet[cat.id] = next;
           this.showToast('已换上新的文章与题目 📖');
+          this.refreshIcons();
+        },
+
+        // ---------- persistence of AI-generated sets (per-device, localStorage) ----------
+        loadGenerated() {
+          try { return JSON.parse(localStorage.getItem('hcl_generated_sets_v1') || '{}') || {}; }
+          catch (e) { return {}; }
+        },
+        persistGenerated() {
+          const build = () => {
+            const data = {};
+            this.categories.forEach((cat) => {
+              const gen = cat.sets.filter((s) => s.generated);
+              if (gen.length) {
+                // store only the content, not runtime UI state
+                data[cat.id] = gen.map((s) => ({
+                  generated: true,
+                  passage: { title: s.passage.title, text: s.passage.text },
+                  questions: s.questions.map((q) => ({
+                    id: q.id, marks: q.marks, q: q.q, model: q.model, criteria: q.criteria,
+                  })),
+                }));
+              }
+            });
+            return data;
+          };
+          try {
+            localStorage.setItem('hcl_generated_sets_v1', JSON.stringify(build()));
+          } catch (e) {
+            // storage full: drop the oldest generated set from the largest category, retry once
+            let largest = null, max = 0;
+            this.categories.forEach((cat) => {
+              const n = cat.sets.filter((s) => s.generated).length;
+              if (n > max) { max = n; largest = cat; }
+            });
+            if (largest) {
+              const idx = largest.sets.findIndex((s) => s.generated);
+              if (idx >= 0) largest.sets.splice(idx, 1);
+            }
+            try { localStorage.setItem('hcl_generated_sets_v1', JSON.stringify(build())); } catch (e2) {}
+          }
+        },
+        // count of AI-generated (saved) sets across all categories
+        get generatedCount() {
+          return this.categories.reduce((n, c) => n + c.sets.filter((s) => s.generated).length, 0);
+        },
+        deleteCurrentSet(cat) {
+          const idx = this.catSet[cat.id] || 0;
+          const set = cat.sets[idx];
+          if (!set || !set.generated) return;
+          set.questions.forEach((q) => { if (q && q.id) delete this.state[q.id]; });
+          cat.sets.splice(idx, 1);
+          this.catSet[cat.id] = Math.max(0, Math.min(idx, cat.sets.length - 1));
+          this.persistGenerated();
+          this.showToast('已删除这组 AI 原创题目 🗑️');
           this.refreshIcons();
         },
 
@@ -769,7 +855,8 @@
 
             cat.sets.push(newSet);
             this.catSet[cat.id] = cat.sets.length - 1;
-            this.showToast('🎉 AI 已为你出好一套全新题目！');
+            this.persistGenerated();
+            this.showToast('🎉 AI 已为你出好一套全新题目（已保存到本机）！');
           } catch (err) {
             clearTimeout(timeout);
             if (err.name === 'AbortError') {
