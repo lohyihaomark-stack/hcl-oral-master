@@ -204,21 +204,60 @@
           </div>
 
           <!-- Question-bank refresh bar -->
-          <div class="flex flex-wrap items-center justify-between gap-3 mb-4 rounded-2xl bg-white border border-slate-200 shadow-sm px-4 sm:px-5 py-3">
-            <div class="flex items-center gap-2 text-sm text-slate-600 min-w-0">
-              <i data-lucide="library" class="w-4 h-4 text-indigo-600 shrink-0"></i>
-              <span class="font-semibold shrink-0">题库</span>
-              <span class="text-slate-400 shrink-0">第 <span class="font-bold text-indigo-600" x-text="(catSet[cat.id] || 0) + 1"></span> / <span x-text="cat.sets.length"></span> 组</span>
-              <span class="hidden sm:inline text-slate-300">·</span>
-              <span class="hidden sm:inline text-xs text-slate-400 truncate" x-text="curSet(cat).passage.title"></span>
+          <div class="mb-4 rounded-2xl bg-white border border-slate-200 shadow-sm px-4 sm:px-5 py-3">
+            <div class="flex flex-wrap items-center justify-between gap-3">
+              <div class="flex items-center gap-2 text-sm text-slate-600 min-w-0">
+                <i data-lucide="library" class="w-4 h-4 text-indigo-600 shrink-0"></i>
+                <span class="font-semibold shrink-0">题库</span>
+                <span class="text-slate-400 shrink-0">第 <span class="font-bold text-indigo-600" x-text="(catSet[cat.id] || 0) + 1"></span> / <span x-text="cat.sets.length"></span> 组</span>
+                <span
+                  x-show="curSet(cat).generated"
+                  class="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-md bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-200"
+                >✨ AI 原创</span>
+                <span class="hidden sm:inline text-slate-300">·</span>
+                <span class="hidden sm:inline text-xs text-slate-400 truncate" x-text="curSet(cat).passage.title"></span>
+              </div>
+              <div class="flex items-center gap-2">
+                <button
+                  @click="refreshSet(cat)"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95"
+                >
+                  <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                  <span class="hidden sm:inline">换一篇</span>
+                </button>
+                <button
+                  @click="generateSet(cat)"
+                  :disabled="genLoading[cat.id]"
+                  class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                >
+                  <template x-if="!genLoading[cat.id]">
+                    <span class="inline-flex items-center gap-2">
+                      <i data-lucide="sparkles" class="w-4 h-4"></i>
+                      AI 出新题
+                    </span>
+                  </template>
+                  <template x-if="genLoading[cat.id]">
+                    <span class="inline-flex items-center gap-2">
+                      <i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i>
+                      AI 命题中…
+                    </span>
+                  </template>
+                </button>
+              </div>
             </div>
-            <button
-              @click="refreshSet(cat)"
-              class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-indigo-600 to-indigo-500 hover:from-indigo-700 hover:to-indigo-600 shadow-md hover:shadow-lg transition-all active:scale-95"
-            >
-              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
-              换一篇文章与题目
-            </button>
+            <!-- generation loading / error -->
+            <div x-show="genLoading[cat.id]" class="mt-3 flex items-center gap-2 text-xs text-fuchsia-600" x-cloak>
+              <i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i>
+              🤖 AI 老师正在为你原创一篇全新的语段与题目，请稍候…
+            </div>
+            <div x-show="genError[cat.id]" class="mt-3 flex items-start gap-1.5 text-xs text-rose-600" x-cloak>
+              <i data-lucide="triangle-alert" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i>
+              <span x-text="genError[cat.id]"></span>
+            </div>
+            <p class="mt-2 text-[11px] text-slate-400">
+              <span class="font-semibold text-slate-500">换一篇</span> = 切换题库里的已有文章；
+              <span class="font-semibold text-fuchsia-600">AI 出新题</span> = 让 Claude 现场原创一套全新题目（需已设置 API 密钥），可无限出题。
+            </p>
           </div>
 
           <!-- Passage + Questions grid -->
@@ -571,8 +610,10 @@
         showSettings: false,
         activeCat: 0,
         toast: '',
-        state: {},   // per-question runtime state keyed by q.id
-        catSet: {},  // currently-active set index per category id
+        state: {},      // per-question runtime state keyed by q.id
+        catSet: {},     // currently-active set index per category id
+        genLoading: {}, // AI-generation loading flag per category id
+        genError: {},   // AI-generation error message per category id
 
         categories: HCL_DATA,
 
@@ -587,6 +628,8 @@
           // build per-question state across every set, and pick a starting set
           this.categories.forEach((cat) => {
             this.catSet[cat.id] = 0;
+            this.genLoading[cat.id] = false;
+            this.genError[cat.id] = null;
             cat.sets.forEach((set) => {
               set.questions.forEach((q) => {
                 this.state[q.id] = {
@@ -625,6 +668,122 @@
           this.catSet[cat.id] = next;
           this.showToast('已换上新的文章与题目 📖');
           this.refreshIcons();
+        },
+
+        // ---------- AI-generated fresh passage + questions (endless practice) ----------
+        async generateSet(cat) {
+          if (!this.apiKey) {
+            this.showSettings = true;
+            this.showToast('生成新题需先设置 API Key 🔑');
+            return;
+          }
+          if (this.genLoading[cat.id]) return;
+
+          this.genLoading[cat.id] = true;
+          this.genError[cat.id] = null;
+          this.refreshIcons();
+
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 60000);
+
+          const systemPrompt =
+            '你是新加坡教育部（MOE）中学「高级华文」（Higher Chinese）的资深命题老师，正在为中一（Secondary 1）学生原创「阅读理解」练习。' +
+            '请针对指定的「答题技能」，创作一篇全新的、贴近中一学生生活、健康正面的简体中文短文，并配上紧扣该技能的题目。' +
+            '要求：①短文 150–260 字，语言规范优美，必须包含能考查该技能的语料；②配 1–2 道简答题，每题 2 或 3 分；' +
+            '③每题提供「参考答案」（model）与 2–3 条「评分要点」（criteria），符合 MOE 评分标准；④题目要能用该技能的答题公式作答。' +
+            '你必须只输出一个 JSON 对象，不要输出任何多余文字、解释或 markdown 代码块围栏，格式严格如下：' +
+            '{"title":"《短文标题》","text":"短文正文，段落之间用\\n\\n分隔","questions":[{"q":"题目","marks":3,"model":"参考答案","criteria":["评分要点1","评分要点2","评分要点3"]}]}';
+
+          const userContent =
+            '【答题技能】' + cat.name + '（' + cat.subtitle + '）\n\n' +
+            '【该技能的答题公式（供命题参考）】\n' + cat.formula.replace(/<[^>]+>/g, '') + '\n\n' +
+            '请据此原创一套全新的阅读语段与题目，并只返回规定格式的 JSON。请确保短文内容与之前不同、新颖有趣。';
+
+          try {
+            const resp = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'x-api-key': this.apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true',
+                'content-type': 'application/json',
+              },
+              signal: controller.signal,
+              body: JSON.stringify({
+                model: 'claude-3-5-sonnet-latest',
+                max_tokens: 1500,
+                temperature: 1,
+                system: systemPrompt,
+                messages: [{ role: 'user', content: userContent }],
+              }),
+            });
+            clearTimeout(timeout);
+
+            if (!resp.ok) {
+              let detail = '';
+              try { detail = (await resp.json())?.error?.message || ''; } catch (e) {}
+              if (resp.status === 401) throw new Error('API 密钥无效或已过期（401）。');
+              if (resp.status === 429) throw new Error('请求过于频繁或额度不足（429），请稍后再试。');
+              throw new Error('出题服务返回错误（HTTP ' + resp.status + '）' + (detail ? '：' + detail : ''));
+            }
+
+            const data = await resp.json();
+            const text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+            const parsed = this.parseAIResponse(text);
+            if (!parsed || !parsed.text || !Array.isArray(parsed.questions) || !parsed.questions.length) {
+              throw new Error('AI 返回的题目格式无法解析，请再试一次。');
+            }
+
+            // build a new set with unique question ids
+            const stamp = Date.now();
+            const newSet = {
+              generated: true,
+              passage: {
+                title: parsed.title || '《AI 原创语段》',
+                text: String(parsed.text),
+              },
+              questions: parsed.questions.slice(0, 3).map((q, i) => {
+                let marks = parseInt(q.marks, 10);
+                if (isNaN(marks) || marks < 1) marks = 3;
+                const criteria = Array.isArray(q.criteria) && q.criteria.length
+                  ? q.criteria.map((c) => String(c))
+                  : ['答出关键要点', '结合原文语境', '语言表达清楚完整'];
+                return {
+                  id: cat.id + '-gen-' + stamp + '-q' + (i + 1),
+                  marks: marks,
+                  q: String(q.q || '请根据短文作答。'),
+                  model: String(q.model || ''),
+                  criteria: criteria,
+                };
+              }),
+            };
+
+            // register runtime state for each new question
+            newSet.questions.forEach((q) => {
+              this.state[q.id] = {
+                answer: '', loading: false, error: null, ai: null,
+                showModel: false, showSelfCheck: false,
+                checks: q.criteria.map(() => false),
+              };
+            });
+
+            cat.sets.push(newSet);
+            this.catSet[cat.id] = cat.sets.length - 1;
+            this.showToast('🎉 AI 已为你出好一套全新题目！');
+          } catch (err) {
+            clearTimeout(timeout);
+            if (err.name === 'AbortError') {
+              this.genError[cat.id] = 'AI 出题超时，请重试。';
+            } else if (err instanceof TypeError) {
+              this.genError[cat.id] = '无法连接出题服务（网络异常或浏览器限制）。';
+            } else {
+              this.genError[cat.id] = err.message || 'AI 出题失败，请重试。';
+            }
+            this.showToast('AI 出题失败：' + this.genError[cat.id]);
+          } finally {
+            this.genLoading[cat.id] = false;
+            this.refreshIcons();
+          }
         },
 
         refreshIcons() {
