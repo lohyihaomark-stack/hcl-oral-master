@@ -710,9 +710,9 @@
               },
               signal: controller.signal,
               body: JSON.stringify({
-                model: 'claude-3-5-sonnet-latest',
+                model: 'claude-sonnet-5',
                 max_tokens: 1500,
-                temperature: 1,
+                thinking: { type: 'disabled' },
                 system: systemPrompt,
                 messages: [{ role: 'user', content: userContent }],
               }),
@@ -728,7 +728,7 @@
             }
 
             const data = await resp.json();
-            const text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+            const text = (data.content || []).filter((b) => b && b.type === 'text').map((b) => b.text).join('') || '';
             const parsed = this.parseAIResponse(text);
             if (!parsed || !parsed.text || !Array.isArray(parsed.questions) || !parsed.questions.length) {
               throw new Error('AI 返回的题目格式无法解析，请再试一次。');
@@ -906,8 +906,9 @@
               },
               signal: controller.signal,
               body: JSON.stringify({
-                model: 'claude-3-5-sonnet-latest',
+                model: 'claude-sonnet-5',
                 max_tokens: 1024,
+                thinking: { type: 'disabled' },
                 system: systemPrompt,
                 messages: [{ role: 'user', content: userContent }],
               }),
@@ -928,7 +929,7 @@
             }
 
             const data = await resp.json();
-            const text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+            const text = (data.content || []).filter((b) => b && b.type === 'text').map((b) => b.text).join('') || '';
             const parsed = this.parseAIResponse(text);
 
             if (!parsed) throw new Error('AI 返回格式无法解析，请重试一次。');
