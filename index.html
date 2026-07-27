@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-SG">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>中一高华阅读理解·AI智能特训站</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Noto Sans SC"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            serif: ['"Noto Serif SC"', 'ui-serif', 'Georgia', 'serif'],
+          },
+        },
+      },
+    };
+  </script>
+
+  <style>
+    [x-cloak] { display: none !important; }
+    html { scroll-behavior: smooth; }
+    body { -webkit-font-smoothing: antialiased; }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; border: 2px solid transparent; background-clip: content-box; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; background-clip: content-box; }
+
+    .glass {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(16px) saturate(160%);
+      -webkit-backdrop-filter: blur(16px) saturate(160%);
+    }
+
+    /* Loading dots */
+    @keyframes bounceDot { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+    .dot { animation: bounceDot 1.4s infinite ease-in-out both; }
+    .dot:nth-child(1) { animation-delay: -0.32s; }
+    .dot:nth-child(2) { animation-delay: -0.16s; }
+
+    @keyframes floatUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-float-up { animation: floatUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+    .passage-scroll { max-height: 460px; }
+    .tab-active-glow { box-shadow: 0 8px 24px -8px rgba(16, 185, 129, 0.55); }
+  </style>
+</head>
+
+<body class="font-sans bg-slate-50 text-slate-800 antialiased">
+  <div
+    x-data="hclApp()"
+    x-init="init()"
+    x-cloak
+    class="min-h-screen flex flex-col"
+  >
+    <!-- ================= TOP NAV ================= -->
+    <header class="sticky top-0 z-40 glass border-b border-slate-200/70">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="flex items-center justify-between h-16 gap-3">
+          <!-- Brand -->
+          <div class="flex items-center gap-3 min-w-0">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-indigo-600 flex items-center justify-center shadow-lg shrink-0">
+              <i data-lucide="book-open-check" class="w-5 h-5 text-white"></i>
+            </div>
+            <div class="min-w-0">
+              <h1 class="text-base sm:text-lg font-black tracking-tight text-slate-900 truncate">
+                中一高华阅读理解<span class="text-emerald-600">·</span>AI智能特训站
+              </h1>
+              <p class="text-[11px] text-slate-500 -mt-0.5 hidden sm:block">Sec 1 Higher Chinese · 阅读理解 AI 自动批改</p>
+            </div>
+          </div>
+
+          <!-- Right controls -->
+          <div class="flex items-center gap-2 sm:gap-3 shrink-0">
+            <!-- Status badge -->
+            <div
+              class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
+              :class="apiKey
+                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                : 'bg-amber-50 text-amber-700 border-amber-200'"
+            >
+              <span class="relative flex h-2 w-2">
+                <span
+                  class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
+                  :class="apiKey ? 'bg-emerald-400' : 'bg-amber-400'"
+                ></span>
+                <span
+                  class="relative inline-flex rounded-full h-2 w-2"
+                  :class="apiKey ? 'bg-emerald-500' : 'bg-amber-500'"
+                ></span>
+              </span>
+              <span x-text="apiKey ? '🟢 AI 批改就绪' : '🟡 模式：人工自评'"></span>
+            </div>
+
+            <!-- Settings button -->
+            <button
+              @click="showSettings = true"
+              class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 hover:shadow-md transition-all"
+            >
+              <i data-lucide="settings-2" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">API 密钥设置</span>
+            </button>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- ================= HERO / STATS ================= -->
+    <section class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6">
+      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-emerald-600 p-6 sm:p-8 text-white shadow-xl">
+        <div class="absolute -top-12 -right-12 w-52 h-52 rounded-full bg-white/10 blur-2xl"></div>
+        <div class="absolute -bottom-16 -left-8 w-52 h-52 rounded-full bg-emerald-300/20 blur-2xl"></div>
+        <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+          <div class="max-w-2xl">
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold mb-3">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 六大核心答题技能 · MOE 评分标准
+            </div>
+            <h2 class="text-xl sm:text-2xl font-black leading-snug">
+              读懂文章，答对得分。让 AI 老师陪你逐题精练。
+            </h2>
+            <p class="text-sm text-indigo-100 mt-2 leading-relaxed">
+              掌握「答题公式 → 精读语段 → 作答 → AI 即时批改」的闭环，把每一分都拿稳。
+            </p>
+          </div>
+          <div class="grid grid-cols-3 gap-3 shrink-0">
+            <div class="text-center px-3 py-3 rounded-2xl bg-white/10 backdrop-blur">
+              <div class="text-2xl font-black">6</div>
+              <div class="text-[11px] text-indigo-100 mt-0.5">技能专项</div>
+            </div>
+            <div class="text-center px-3 py-3 rounded-2xl bg-white/10 backdrop-blur">
+              <div class="text-2xl font-black" x-text="totalQuestions"></div>
+              <div class="text-[11px] text-indigo-100 mt-0.5">精选题目</div>
+            </div>
+            <div class="text-center px-3 py-3 rounded-2xl bg-white/10 backdrop-blur">
+              <div class="text-2xl font-black" x-text="answeredCount"></div>
+              <div class="text-[11px] text-indigo-100 mt-0.5">已作答</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= TABS ================= -->
+    <nav class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6">
+      <div class="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x">
+        <template x-for="(cat, idx) in categories" :key="cat.id">
+          <button
+            @click="activeCat = idx"
+            class="snap-start shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold border transition-all duration-200"
+            :class="activeCat === idx
+              ? 'bg-emerald-600 text-white border-emerald-600 tab-active-glow'
+              : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'"
+          >
+            <span class="text-base" x-text="cat.icon"></span>
+            <span x-text="cat.name"></span>
+          </button>
+        </template>
+      </div>
+    </nav>
+
+    <!-- ================= MAIN CONTENT ================= -->
+    <main class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 flex-1">
+      <template x-for="(cat, idx) in categories" :key="cat.id">
+        <div x-show="activeCat === idx" class="animate-float-up">
+
+          <!-- Formula card -->
+          <div class="rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden mb-6">
+            <div class="px-5 sm:px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 flex items-start gap-3">
+              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-indigo-500 flex items-center justify-center text-xl shrink-0 shadow">
+                <span x-text="cat.icon"></span>
+              </div>
+              <div class="min-w-0">
+                <h3 class="text-lg font-black text-slate-900" x-text="cat.name"></h3>
+                <p class="text-xs text-slate-500 mt-0.5" x-text="cat.subtitle"></p>
+              </div>
+            </div>
+            <div class="px-5 sm:px-6 py-4">
+              <div class="flex items-center gap-2 mb-3">
+                <i data-lucide="key-round" class="w-4 h-4 text-emerald-600"></i>
+                <span class="text-sm font-bold text-emerald-700">答题公式 · Answering Formula</span>
+              </div>
+              <div class="rounded-2xl bg-emerald-50/70 border border-emerald-100 px-4 py-3.5">
+                <p class="font-serif text-[15px] leading-loose text-slate-800" x-html="cat.formula"></p>
+              </div>
+              <template x-if="cat.tips">
+                <p class="text-xs text-slate-500 mt-3 flex items-start gap-1.5">
+                  <i data-lucide="lightbulb" class="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0"></i>
+                  <span x-text="cat.tips"></span>
+                </p>
+              </template>
+            </div>
+          </div>
+
+          <!-- Passages + Questions grid -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+            <!-- LEFT: Passages -->
+            <div class="space-y-5 lg:sticky lg:top-20 self-start">
+              <template x-for="(p, pIdx) in cat.passages" :key="pIdx">
+                <article class="rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+                  <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+                    <div class="flex items-center gap-2 min-w-0">
+                      <i data-lucide="file-text" class="w-4 h-4 text-emerald-300 shrink-0"></i>
+                      <h4 class="text-sm font-bold truncate" x-text="p.title"></h4>
+                    </div>
+                    <span class="text-[11px] text-slate-400 shrink-0" x-text="'语段 ' + (pIdx + 1)"></span>
+                  </div>
+                  <div class="px-5 sm:px-6 py-5 overflow-y-auto passage-scroll">
+                    <p class="font-serif text-[17px] leading-loose text-slate-800 whitespace-pre-line" x-text="p.text"></p>
+                  </div>
+                </article>
+              </template>
+            </div>
+
+            <!-- RIGHT: Questions -->
+            <div class="space-y-5">
+              <template x-for="(q, qIdx) in cat.questions" :key="q.id">
+                <div class="rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+                  <!-- Question header -->
+                  <div class="px-5 sm:px-6 pt-5 pb-4">
+                    <div class="flex items-start justify-between gap-3">
+                      <div class="flex items-start gap-3 min-w-0">
+                        <span class="shrink-0 w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 font-black text-sm flex items-center justify-center" x-text="qIdx + 1"></span>
+                        <div class="min-w-0">
+                          <p class="text-[15px] font-bold text-slate-900 leading-snug" x-text="q.q"></p>
+                          <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100" x-text="q.marks + ' 分'"></span>
+                            <span class="text-[11px] text-slate-400" x-text="'参考语段 ' + (q.passage + 1)"></span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Answer input -->
+                  <div class="px-5 sm:px-6 pb-4">
+                    <label class="text-xs font-semibold text-slate-500 mb-1.5 block">✍️ 我的作答</label>
+                    <textarea
+                      x-model="state[q.id].answer"
+                      rows="4"
+                      :placeholder="'请根据语段作答（' + q.marks + ' 分）……运用答题公式，写出要点并结合原文。'"
+                      class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3 font-serif text-[15px] leading-relaxed text-slate-800 placeholder:text-slate-400 placeholder:font-sans placeholder:text-[13px] focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition resize-y"
+                    ></textarea>
+
+                    <div class="flex flex-wrap items-center gap-2 mt-3">
+                      <button
+                        @click="markAnswer(cat, q)"
+                        :disabled="state[q.id].loading"
+                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                      >
+                        <template x-if="!state[q.id].loading">
+                          <span class="inline-flex items-center gap-2">
+                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <span x-text="apiKey ? '提交 · AI 批改' : '提交 · 对照评分'"></span>
+                          </span>
+                        </template>
+                        <template x-if="state[q.id].loading">
+                          <span class="inline-flex items-center gap-2">
+                            <i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i>
+                            批改中…
+                          </span>
+                        </template>
+                      </button>
+
+                      <button
+                        @click="toggleModel(q)"
+                        class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                      >
+                        <i data-lucide="book-open" class="w-4 h-4"></i>
+                        <span x-text="state[q.id].showModel ? '收起参考答案' : '查看参考答案'"></span>
+                      </button>
+
+                      <button
+                        x-show="state[q.id].answer || state[q.id].ai || state[q.id].showModel"
+                        @click="resetQuestion(q)"
+                        class="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-rose-500 transition-colors"
+                      >
+                        <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+                        重做
+                      </button>
+                    </div>
+                  </div>
+
+                  <!-- Loading state -->
+                  <div x-show="state[q.id].loading" class="px-5 sm:px-6 pb-5" x-cloak>
+                    <div class="rounded-2xl bg-gradient-to-br from-indigo-50 to-emerald-50 border border-indigo-100 px-5 py-6 flex flex-col items-center text-center">
+                      <div class="flex items-center gap-1.5 mb-3">
+                        <span class="dot w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                        <span class="dot w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                        <span class="dot w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                      </div>
+                      <p class="text-sm font-bold text-indigo-700">🤖 AI 老师正在研读你的答案，精准批改中...</p>
+                      <p class="text-xs text-slate-500 mt-1">对照原文语境、评分标准与参考答案，请稍候</p>
+                    </div>
+                  </div>
+
+                  <!-- Error / network notice -->
+                  <div x-show="state[q.id].error" class="px-5 sm:px-6 pb-4" x-cloak>
+                    <div class="rounded-2xl bg-rose-50 border border-rose-200 px-4 py-3 flex items-start gap-2.5">
+                      <i data-lucide="triangle-alert" class="w-4 h-4 text-rose-500 mt-0.5 shrink-0"></i>
+                      <div class="min-w-0">
+                        <p class="text-sm font-semibold text-rose-700" x-text="state[q.id].error"></p>
+                        <p class="text-xs text-rose-500 mt-0.5">已自动切换到「人工自评模式」，请对照下方参考答案与评分要点。</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ===== AI RESULT CARD ===== -->
+                  <div x-show="state[q.id].ai" class="px-5 sm:px-6 pb-5 animate-float-up" x-cloak>
+                    <div class="rounded-2xl overflow-hidden border border-indigo-100 shadow-sm">
+                      <div class="px-5 py-3.5 bg-gradient-to-r from-indigo-600 to-emerald-600 text-white flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                          <i data-lucide="bot" class="w-4.5 h-4.5"></i>
+                          <span class="font-bold text-sm">AI 老师批改反馈</span>
+                        </div>
+                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 font-black text-sm">
+                          <i data-lucide="award" class="w-4 h-4"></i>
+                          <span x-text="(state[q.id].ai?.score ?? '—') + ' / ' + q.marks + ' 分'"></span>
+                        </div>
+                      </div>
+                      <div class="bg-gradient-to-br from-slate-50 to-white p-5 space-y-4">
+                        <!-- Strengths -->
+                        <div>
+                          <div class="flex items-center gap-1.5 mb-1.5">
+                            <i data-lucide="circle-check-big" class="w-4 h-4 text-emerald-600"></i>
+                            <span class="text-sm font-bold text-emerald-700">优点 · 你答对了</span>
+                          </div>
+                          <p class="font-serif text-[15px] leading-loose text-slate-700 pl-6" x-text="state[q.id].ai?.strengths"></p>
+                        </div>
+                        <!-- Missing -->
+                        <div>
+                          <div class="flex items-center gap-1.5 mb-1.5">
+                            <i data-lucide="circle-alert" class="w-4 h-4 text-amber-600"></i>
+                            <span class="text-sm font-bold text-amber-700">失分点与建议</span>
+                          </div>
+                          <p class="font-serif text-[15px] leading-loose text-slate-700 pl-6" x-text="state[q.id].ai?.missing"></p>
+                        </div>
+                        <!-- Improved answer -->
+                        <div>
+                          <div class="flex items-center gap-1.5 mb-1.5">
+                            <i data-lucide="pen-line" class="w-4 h-4 text-indigo-600"></i>
+                            <span class="text-sm font-bold text-indigo-700">修改建议范文</span>
+                          </div>
+                          <div class="rounded-xl bg-indigo-50/70 border border-indigo-100 px-4 py-3 ml-6">
+                            <p class="font-serif text-[15px] leading-loose text-slate-800" x-text="state[q.id].ai?.improved"></p>
+                          </div>
+                        </div>
+                        <template x-if="state[q.id].ai?.encourage">
+                          <p class="text-[13px] text-slate-500 italic pl-6 flex items-start gap-1.5">
+                            <i data-lucide="heart" class="w-3.5 h-3.5 text-rose-400 mt-0.5 shrink-0"></i>
+                            <span x-text="state[q.id].ai?.encourage"></span>
+                          </p>
+                        </template>
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- ===== MODEL ANSWER + SELF-CHECK (fallback / manual) ===== -->
+                  <div x-show="state[q.id].showModel || state[q.id].showSelfCheck" class="px-5 sm:px-6 pb-5 animate-float-up" x-cloak>
+                    <div class="rounded-2xl border border-slate-200 overflow-hidden">
+                      <div class="px-5 py-3 bg-slate-100 flex items-center gap-2">
+                        <i data-lucide="clipboard-check" class="w-4 h-4 text-slate-600"></i>
+                        <span class="font-bold text-sm text-slate-700">参考答案 · 人工自评清单</span>
+                      </div>
+                      <div class="p-5 space-y-4 bg-white">
+                        <!-- Model answer -->
+                        <div>
+                          <span class="text-xs font-bold text-emerald-700 uppercase tracking-wide">参考答案</span>
+                          <div class="rounded-xl bg-emerald-50/60 border border-emerald-100 px-4 py-3 mt-1.5">
+                            <p class="font-serif text-[15px] leading-loose text-slate-800" x-text="q.model"></p>
+                          </div>
+                        </div>
+                        <!-- Criteria -->
+                        <div>
+                          <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">评分要点 · 逐条勾选（<span x-text="q.marks"></span> 分）</span>
+                          <div class="mt-2 space-y-2">
+                            <template x-for="(c, cIdx) in q.criteria" :key="cIdx">
+                              <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-150 bg-slate-50/50 hover:bg-slate-50 cursor-pointer transition-colors">
+                                <input
+                                  type="checkbox"
+                                  x-model="state[q.id].checks[cIdx]"
+                                  class="mt-0.5 w-5 h-5 rounded-md border-slate-300 text-emerald-600 focus:ring-emerald-400 cursor-pointer shrink-0"
+                                />
+                                <span class="font-serif text-[14px] leading-relaxed text-slate-700" x-text="c"></span>
+                              </label>
+                            </template>
+                          </div>
+                          <!-- Self score -->
+                          <div class="mt-3 flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-50 border border-indigo-100">
+                            <span class="text-sm font-semibold text-indigo-700">自评得分</span>
+                            <span class="text-lg font-black text-indigo-700">
+                              <span x-text="selfScore(q)"></span> / <span x-text="q.marks"></span> 分
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+              </template>
+            </div>
+          </div>
+        </div>
+      </template>
+    </main>
+
+    <!-- ================= FOOTER ================= -->
+    <footer class="border-t border-slate-200 bg-white/60 mt-auto">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
+        <p>中一高华阅读理解·AI智能特训站 · 助力 Sec 1 Higher Chinese 阅读理解精练</p>
+        <p class="flex items-center gap-1.5">
+          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          API 密钥仅保存在你的浏览器 localStorage，不会上传服务器
+        </p>
+      </div>
+    </footer>
+
+    <!-- ================= SETTINGS MODAL ================= -->
+    <div
+      x-show="showSettings"
+      x-cloak
+      @keydown.escape.window="showSettings = false"
+      class="fixed inset-0 z-50 flex items-center justify-center p-4"
+    >
+      <div
+        x-show="showSettings"
+        x-transition.opacity
+        @click="showSettings = false"
+        class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
+      ></div>
+
+      <div
+        x-show="showSettings"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0 translate-y-6 scale-95"
+        x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+        class="relative w-full max-w-md rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden"
+      >
+        <!-- header -->
+        <div class="px-6 py-5 bg-gradient-to-r from-indigo-600 to-emerald-600 text-white">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5">
+              <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
+                <i data-lucide="key-round" class="w-4.5 h-4.5"></i>
+              </div>
+              <div>
+                <h3 class="font-black text-base">API 密钥设置</h3>
+                <p class="text-[11px] text-indigo-100">连接 Claude，开启实时智能批改</p>
+              </div>
+            </div>
+            <button @click="showSettings = false" class="w-8 h-8 rounded-lg hover:bg-white/20 flex items-center justify-center transition-colors">
+              <i data-lucide="x" class="w-4.5 h-4.5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- body -->
+        <div class="px-6 py-5 space-y-4">
+          <div>
+            <label class="text-sm font-semibold text-slate-700 mb-1.5 block">Anthropic API Key</label>
+            <div class="relative">
+              <input
+                :type="showKeyText ? 'text' : 'password'"
+                x-model="keyInput"
+                placeholder="sk-ant-api03-..."
+                autocomplete="off"
+                spellcheck="false"
+                class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-11 py-3 text-sm font-mono text-slate-800 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition"
+              />
+              <button
+                @click="showKeyText = !showKeyText"
+                type="button"
+                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+              >
+                <i :data-lucide="showKeyText ? 'eye-off' : 'eye'" class="w-4.5 h-4.5"></i>
+              </button>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-2 flex items-start gap-1.5">
+              <i data-lucide="info" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i>
+              密钥仅存于本机浏览器（localStorage），直接从浏览器请求 Claude API，不经过任何第三方服务器。
+            </p>
+          </div>
+
+          <!-- status preview -->
+          <div
+            class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold border"
+            :class="keyInput.trim()
+              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+              : 'bg-amber-50 text-amber-700 border-amber-200'"
+          >
+            <i :data-lucide="keyInput.trim() ? 'circle-check-big' : 'circle-alert'" class="w-4 h-4"></i>
+            <span x-text="keyInput.trim() ? '🟢 已就绪：提交后将由 AI 老师自动批改' : '🟡 未输入：将使用人工自评模式（参考答案 + 自评清单）'"></span>
+          </div>
+        </div>
+
+        <!-- footer -->
+        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
+          <button
+            @click="clearKey()"
+            class="text-sm font-medium text-slate-400 hover:text-rose-500 transition-colors"
+          >
+            清除密钥
+          </button>
+          <div class="flex items-center gap-2">
+            <button
+              @click="showSettings = false"
+              class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+            >
+              取消
+            </button>
+            <button
+              @click="saveKey()"
+              class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:shadow-lg transition-all"
+            >
+              保存密钥
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toast -->
+    <div
+      x-show="toast"
+      x-cloak
+      x-transition
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900 text-white text-sm font-semibold shadow-2xl flex items-center gap-2"
+    >
+      <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
+      <span x-text="toast"></span>
+    </div>
+  </div>
+
+  <!-- Alpine.js (defer, after app definition) -->
+  <script>
+    function hclApp() {
+      return {
+        // ---------- state ----------
+        apiKey: '',
+        keyInput: '',
+        showKeyText: false,
+        showSettings: false,
+        activeCat: 0,
+        toast: '',
+        state: {}, // per-question runtime state keyed by q.id
+
+        categories: HCL_DATA,
+
+        // ---------- lifecycle ----------
+        init() {
+          // load saved key
+          try {
+            this.apiKey = localStorage.getItem('hcl_anthropic_key') || '';
+          } catch (e) { this.apiKey = ''; }
+          this.keyInput = this.apiKey;
+
+          // build per-question state
+          this.categories.forEach((cat) => {
+            cat.questions.forEach((q) => {
+              this.state[q.id] = {
+                answer: '',
+                loading: false,
+                error: null,
+                ai: null,
+                showModel: false,
+                showSelfCheck: false,
+                checks: q.criteria.map(() => false),
+              };
+            });
+          });
+
+          this.refreshIcons();
+          // re-render icons whenever the view changes
+          this.$watch('activeCat', () => this.refreshIcons());
+          this.$watch('showSettings', () => this.refreshIcons());
+          this.$watch('state', () => this.refreshIcons(), { deep: true });
+        },
+
+        refreshIcons() {
+          this.$nextTick(() => {
+            if (window.lucide) window.lucide.createIcons();
+          });
+        },
+
+        // ---------- computed ----------
+        get totalQuestions() {
+          return this.categories.reduce((n, c) => n + c.questions.length, 0);
+        },
+        get answeredCount() {
+          let n = 0;
+          Object.values(this.state).forEach((s) => { if (s.answer && s.answer.trim()) n++; });
+          return n;
+        },
+
+        // ---------- key management ----------
+        saveKey() {
+          const k = this.keyInput.trim();
+          this.apiKey = k;
+          try {
+            if (k) localStorage.setItem('hcl_anthropic_key', k);
+            else localStorage.removeItem('hcl_anthropic_key');
+          } catch (e) {}
+          this.showSettings = false;
+          this.showToast(k ? '✅ 密钥已保存，AI 批改已就绪' : '已切换到人工自评模式');
+        },
+        clearKey() {
+          this.keyInput = '';
+          this.apiKey = '';
+          try { localStorage.removeItem('hcl_anthropic_key'); } catch (e) {}
+          this.showToast('密钥已清除');
+        },
+
+        // ---------- question UI helpers ----------
+        toggleModel(q) {
+          this.state[q.id].showModel = !this.state[q.id].showModel;
+          this.refreshIcons();
+        },
+        resetQuestion(q) {
+          const s = this.state[q.id];
+          s.answer = '';
+          s.ai = null;
+          s.error = null;
+          s.showModel = false;
+          s.showSelfCheck = false;
+          s.checks = q.criteria.map(() => false);
+          this.refreshIcons();
+        },
+        selfScore(q) {
+          const s = this.state[q.id];
+          const got = s.checks.filter(Boolean).length;
+          const ratio = got / q.criteria.length;
+          return Math.round(ratio * q.marks * 10) / 10;
+        },
+        showToast(msg) {
+          this.toast = msg;
+          clearTimeout(this._toastT);
+          this._toastT = setTimeout(() => { this.toast = ''; }, 2800);
+        },
+
+        // ---------- AI marking ----------
+        async markAnswer(cat, q) {
+          const s = this.state[q.id];
+          if (!s.answer || !s.answer.trim()) {
+            this.showToast('请先写下你的答案再提交哦 ✍️');
+            return;
+          }
+
+          // Fallback: no key -> manual self-check mode
+          if (!this.apiKey) {
+            s.showSelfCheck = true;
+            s.showModel = true;
+            this.refreshIcons();
+            this.showToast('未输入 API Key，已进入人工自评模式');
+            return;
+          }
+
+          const passageText = cat.passages[q.passage] ? cat.passages[q.passage].text : '';
+
+          s.loading = true;
+          s.error = null;
+          s.ai = null;
+
+          const controller = new AbortController();
+          const timeout = setTimeout(() => controller.abort(), 45000);
+
+          const systemPrompt =
+            '你是一位严谨而又鼓励学生的新加坡中学高级华文（Higher Chinese）老师，正在批改中一学生的「阅读理解」简答题。' +
+            '请依据【文章语境】【题目】【参考答案】【评分标准】，严格按照新加坡教育部（MOE）评分尺度评估学生作答，' +
+            '判断学生是否答出关键要点、是否结合原文语境、是否有具体阐述与恰当的语言表达。' +
+            '批改要点：得分要客观（对照评分标准逐点给分），语气要专业且鼓励，指出失分原因要具体（缺要点／缺原文依据／缺阐述／表达笼统等）。' +
+            '你必须只输出一个 JSON 对象，不要输出任何多余文字、解释或 markdown 代码块围栏，格式如下：' +
+            '{"score": <数字，0到满分之间，可为小数>, "strengths": "<用中文写学生答对的关键点、答出的关键词>", ' +
+            '"missing": "<用中文写失分点与具体修改建议：缺了哪些要点、缺乏哪些原文依据或阐述、结构问题>", ' +
+            '"improved": "<用中文写一段修改后的示范答案，示范如何拿满分>", ' +
+            '"encourage": "<一句简短的鼓励语>"}';
+
+          const userContent =
+            '【文章语境 / Passage】\n' + passageText + '\n\n' +
+            '【题目 / Question】（满分 ' + q.marks + ' 分）\n' + q.q + '\n\n' +
+            '【参考答案 / Model Answer】\n' + q.model + '\n\n' +
+            '【评分标准 / Scoring Criteria】\n- ' + q.criteria.join('\n- ') + '\n\n' +
+            '【学生作答 / Student Answer】\n' + s.answer.trim() + '\n\n' +
+            '请批改并只返回规定格式的 JSON。';
+
+          try {
+            const resp = await fetch('https://api.anthropic.com/v1/messages', {
+              method: 'POST',
+              headers: {
+                'x-api-key': this.apiKey,
+                'anthropic-version': '2023-06-01',
+                'anthropic-dangerous-direct-browser-access': 'true',
+                'content-type': 'application/json',
+              },
+              signal: controller.signal,
+              body: JSON.stringify({
+                model: 'claude-3-5-sonnet-latest',
+                max_tokens: 1024,
+                system: systemPrompt,
+                messages: [{ role: 'user', content: userContent }],
+              }),
+            });
+
+            clearTimeout(timeout);
+
+            if (!resp.ok) {
+              let detail = '';
+              try {
+                const errJson = await resp.json();
+                detail = errJson?.error?.message || '';
+              } catch (e) {}
+              if (resp.status === 401) throw new Error('API 密钥无效或已过期（401），请在设置中检查密钥。');
+              if (resp.status === 429) throw new Error('请求过于频繁或额度不足（429），请稍后再试。');
+              if (resp.status === 400) throw new Error('请求有误（400）：' + (detail || '请检查密钥与网络。'));
+              throw new Error('批改服务返回错误（HTTP ' + resp.status + '）' + (detail ? '：' + detail : ''));
+            }
+
+            const data = await resp.json();
+            const text = (data.content && data.content[0] && data.content[0].text) ? data.content[0].text : '';
+            const parsed = this.parseAIResponse(text);
+
+            if (!parsed) throw new Error('AI 返回格式无法解析，请重试一次。');
+
+            // clamp score
+            let score = Number(parsed.score);
+            if (isNaN(score)) score = null;
+            else score = Math.max(0, Math.min(q.marks, Math.round(score * 10) / 10));
+
+            s.ai = {
+              score: score,
+              strengths: parsed.strengths || '—',
+              missing: parsed.missing || '—',
+              improved: parsed.improved || '—',
+              encourage: parsed.encourage || '',
+            };
+            s.showModel = false;
+            s.showSelfCheck = false;
+          } catch (err) {
+            clearTimeout(timeout);
+            if (err.name === 'AbortError') {
+              s.error = '批改超时（网络较慢或请求过大），请重试。';
+            } else if (err instanceof TypeError) {
+              // Typically CORS/network failure
+              s.error = '无法连接批改服务（网络异常或浏览器限制）。';
+            } else {
+              s.error = err.message || '批改失败，请重试。';
+            }
+            // graceful fallback to manual mode
+            s.showSelfCheck = true;
+            s.showModel = true;
+          } finally {
+            s.loading = false;
+            this.refreshIcons();
+          }
+        },
+
+        parseAIResponse(text) {
+          if (!text) return null;
+          // strip code fences if present
+          let t = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
+          // try direct parse
+          try { return JSON.parse(t); } catch (e) {}
+          // try to extract first {...} block
+          const match = t.match(/\{[\s\S]*\}/);
+          if (match) {
+            try { return JSON.parse(match[0]); } catch (e) {}
+          }
+          return null;
+        },
+      };
+    }
+  </script>
+
+  <!-- ================= DATA ================= -->
+  <script>
+    const HCL_DATA = [
+      // 1. 人物形象与描写手法
+      {
+        id: 'char',
+        icon: '🎭',
+        name: '人物形象与描写手法',
+        subtitle: 'Character Traits & Descriptions · 外貌 / 语言 / 动作 / 神态 / 心理描写',
+        formula:
+          '<b>①判断描写手法</b>（外貌、语言、动作、神态、心理描写）→ <b>②结合原文具体语句</b> → ' +
+          '<b>③分析人物的性格／品质／心情</b> → <b>④点出作者的情感或用意</b>。<br>' +
+          '答题模板：「这是<span class="text-emerald-700 font-bold">___描写</span>，通过『___』（原文），' +
+          '生动地表现出人物<span class="text-emerald-700 font-bold">___的性格／心情</span>。」',
+        tips: '要点：先给「手法名称」，再「引原文」，最后「品质／情感」，三步缺一不可。',
+        passages: [
+          {
+            title: '《修伞的老人》',
+            text:
+              '巷口那把褪了色的大伞下，老周已经坐了三十年。他的手指关节粗大，布满了褐色的裂口，像一段被岁月磨旧的老树根。每当有人递来一把坏伞，他都会眯起眼睛，把伞骨凑到光下细细端详，仿佛在替一位老友诊病。\n\n' +
+              '那天下着雨，一个背着书包的小男孩举着断了骨的伞跑来，声音发颤：「爷爷，我妈说……我们……付不起钱。」老周没有抬头，只是把伞接了过去，手指麻利地穿针引线。「拿去吧，」他把修好的伞塞进男孩怀里，粗糙的手掌在男孩头上轻轻拍了拍，「下回记得，别在风里逞强。」男孩怔怔地望着他，雨水顺着伞沿滴落，老周却已低下头，继续修补下一把伞了。',
+          },
+        ],
+        questions: [
+          {
+            id: 'char-q1',
+            passage: 0,
+            marks: 3,
+            q: '文中画线句「他的手指关节粗大，布满了褐色的裂口，像一段被岁月磨旧的老树根」运用了什么描写手法？有什么表达作用？',
+            model:
+              '这是外貌（细节）描写，并结合了比喻的修辞。作者把老周粗大、布满裂口的手指比作「被岁月磨旧的老树根」，生动形象地写出了老周双手的苍老与粗糙，暗示他修伞劳作了几十年、饱经风霜，突出他勤劳、坚韧的形象，也流露出作者对他的敬意与心疼。',
+            criteria: [
+              '准确指出描写手法：外貌（细节）描写（并点出比喻）',
+              '结合原文：引用「手指粗大／褐色裂口／老树根」等具体内容',
+              '分析人物形象或情感：写出老周苍老、勤劳、饱经风霜（或作者的敬意）',
+            ],
+          },
+          {
+            id: 'char-q2',
+            passage: 0,
+            marks: 3,
+            q: '老周「粗糙的手掌在男孩头上轻轻拍了拍」，这一动作描写表现了老周怎样的性格？请结合内容分析。',
+            model:
+              '这是动作描写。「轻轻拍了拍」这一细微而温柔的动作，与他「粗糙的手掌」形成对比，表现出老周外表虽然苍老粗糙，内心却十分善良、慈爱。他不但免费替付不起钱的男孩修伞，还以长辈般的关怀安慰、叮嘱男孩，突出他乐于助人、体恤他人的美好品质。',
+            criteria: [
+              '指出手法：动作（细节）描写',
+              '结合原文「轻轻拍了拍」并可点出与「粗糙手掌」的对比',
+              '分析品质：善良、慈爱、乐于助人、体恤他人',
+            ],
+          },
+        ],
+      },
+
+      // 2. 修辞手法与表达效果
+      {
+        id: 'rhetoric',
+        icon: '🎨',
+        name: '修辞手法与表达效果',
+        subtitle: 'Rhetorical Devices · 比喻 / 拟人 / 夸张 / 排比 / 反问',
+        formula:
+          '<b>①判断修辞</b>（比喻／拟人／夸张／排比／反问）→ <b>②说明怎么用</b>（把什么比作什么／把什么当人写）→ ' +
+          '<b>③点出效果</b>（生动形象／突出特点／富有感染力）→ <b>④联系情感或中心</b>。<br>' +
+          '比喻：「把___比作___，<span class="text-emerald-700 font-bold">生动形象</span>地写出___」；' +
+          '拟人：「赋予___以人的___，<span class="text-emerald-700 font-bold">亲切生动</span>地表现___」。',
+        tips: '关键词记牢：比喻＝生动形象；拟人＝亲切生动、富有情趣；夸张＝突出强调；排比＝增强气势。',
+        passages: [
+          {
+            title: '《春醒》',
+            text:
+              '一夜春雨过后，山谷仿佛被谁悄悄唤醒了。溪水踮着脚尖，一路蹦跳着奔向山脚，边跑边唱着清脆的歌。两岸的野花你挤我、我挤你，争先恐后地探出头来，生怕错过了这场盛大的约会。\n\n' +
+              '最先按捺不住的是那株老桃树。它一夜之间披上了万点胭脂，远远望去，像天边燃起的一片粉色的云霞。风一吹，花瓣纷纷扬扬，簌簌落下，像下起了一场香甜的雪。孩子们在花树下追逐，笑声比溪水还要清亮，整座山谷都荡漾着藏不住的欢喜。',
+          },
+        ],
+        questions: [
+          {
+            id: 'rhet-q1',
+            passage: 0,
+            marks: 3,
+            q: '「溪水踮着脚尖，一路蹦跳着奔向山脚，边跑边唱着清脆的歌」一句运用了什么修辞手法？有什么表达效果？',
+            model:
+              '这句话运用了拟人的修辞手法。作者赋予溪水以人的动作和情态——「踮着脚尖」「蹦跳」「唱歌」，把溪水当作活泼欢快的孩子来写，亲切生动、富有情趣地写出了春天溪水欢快流淌、充满生机的样子，也流露出作者对春天的喜爱与欣喜之情。',
+            criteria: [
+              '准确判断修辞：拟人',
+              '说明如何运用：赋予溪水「踮脚尖／蹦跳／唱歌」等人的动作情态',
+              '点出效果与情感：生动活泼、富有情趣，写出春溪的生机与作者的喜爱',
+            ],
+          },
+          {
+            id: 'rhet-q2',
+            passage: 0,
+            marks: 3,
+            q: '作者把飘落的桃花花瓣比作「一场香甜的雪」，这样写好在哪里？',
+            model:
+              '这是比喻的修辞。作者把纷纷飘落的桃花花瓣比作「香甜的雪」，从颜色（洁白粉嫩）和数量（漫天飞舞）上写出了落花之多、之美，生动形象；「香甜」二字更巧妙地融入了花的芬芳与作者心中的甜美感受，使画面有声有色、可感可触，表达了作者对春景的沉醉与喜爱。',
+            criteria: [
+              '判断修辞：比喻（把花瓣比作雪）',
+              '分析相似点：数量多／漫天飞舞／颜色（并可点出「香甜」的通感或情味）',
+              '点出效果与情感：生动形象，写出落花之美与作者的喜爱、陶醉',
+            ],
+          },
+        ],
+      },
+
+      // 3. 说明方法与作用
+      {
+        id: 'expo',
+        icon: '📊',
+        name: '说明方法与作用',
+        subtitle: 'Expository Techniques · 列数字 / 举例子 / 作比较 / 打比方 / 分类别',
+        formula:
+          '<b>①判断说明方法</b>（列数字／举例子／作比较／打比方／分类别）→ <b>②结合原文</b> → ' +
+          '<b>③点明作用</b>（准确／具体／直观地说明了事物的___特点）。<br>' +
+          '列数字：「用具体数据<span class="text-emerald-700 font-bold">准确</span>地说明了___」；' +
+          '举例子：「举___的例子，<span class="text-emerald-700 font-bold">具体真切</span>地说明了___」。',
+        tips: '说明文答「作用」万能落点：让说明更「准确／具体／直观／有说服力」＋说明对象的「特点」。',
+        passages: [
+          {
+            title: '《海洋里的“清道夫”——鲨鱼》',
+            text:
+              '在很多人的印象里，鲨鱼是凶残的「海底杀手」。其实，鲨鱼更像是海洋生态系统里勤勤恳恳的「清道夫」。地球上现存的鲨鱼约有五百种，它们大多以生病、受伤或死亡的鱼类为食，及时清理了海洋中的「垃圾」，维持着海洋的洁净与平衡。\n\n' +
+              '鲨鱼的嗅觉极其灵敏。据科学家测算，一条鲨鱼能嗅出稀释到百万分之一的血腥味，相当于在一个标准游泳池里滴入一滴血，它也能准确察觉。和陆地上的猎豹相比，鲨鱼的游速虽不算最快，但它的耐力惊人，能连续追踪猎物数十公里而不知疲倦。正因如此，海洋中那些体弱多病的生物，往往难逃它的「巡查」。',
+          },
+        ],
+        questions: [
+          {
+            id: 'expo-q1',
+            passage: 0,
+            marks: 3,
+            q: '「一条鲨鱼能嗅出稀释到百万分之一的血腥味，相当于在一个标准游泳池里滴入一滴血」一句运用了哪些说明方法？有什么作用？',
+            model:
+              '这句话运用了列数字和打比方（作比较）的说明方法。「百万分之一」用具体的数字，准确地说明了鲨鱼嗅觉的灵敏程度；再用「在游泳池里滴入一滴血」这一生活中的例子作类比，把抽象的数据变得具体可感、通俗易懂，让读者更直观、真切地体会到鲨鱼嗅觉的惊人灵敏，增强了说明的准确性和说服力。',
+            criteria: [
+              '判断说明方法：列数字（百万分之一）＋打比方／举例（滴一滴血）',
+              '列数字作用：具体准确地说明鲨鱼嗅觉灵敏',
+              '打比方／举例作用：化抽象为具体，直观易懂、有说服力',
+            ],
+          },
+          {
+            id: 'expo-q2',
+            passage: 0,
+            marks: 2,
+            q: '第一段把鲨鱼称为海洋里的「清道夫」，这样写有什么好处？',
+            model:
+              '这里运用了打比方的说明方法，把鲨鱼比作「清道夫」，生动形象地说明了鲨鱼以病、伤、死鱼为食、清理海洋、维持生态平衡的作用；同时也纠正了人们「鲨鱼是凶残杀手」的片面印象，使说明既通俗易懂又引人思考。',
+            criteria: [
+              '判断说明方法：打比方（比作「清道夫」）',
+              '点出作用：生动形象地说明鲨鱼清理海洋、维持生态平衡的作用（或纠正偏见）',
+            ],
+          },
+        ],
+      },
+
+      // 4. 事实与意见辨析
+      {
+        id: 'factopinion',
+        icon: '⚖️',
+        name: '事实与意见辨析',
+        subtitle: 'Facts vs. Opinions · 客观事实 / 主观看法的判断与依据',
+        formula:
+          '<b>事实</b>：可以<span class="text-emerald-700 font-bold">查证</span>、客观存在、有数据／时间／地点／事件（真假可判断）。<br>' +
+          '<b>意见</b>：表达<span class="text-emerald-700 font-bold">看法、评价、感受、推测</span>，常含「我认为／应该／最好／也许／美丽／重要」等词。<br>' +
+          '答题：先判定「是事实／是意见」，再<b>说明理由</b>（能否查证／是否带有主观评价词）。',
+        tips: '判断口诀：能核实真假＝事实；带评价、情感、建议、推测＝意见。理由要「贴着句子」说。',
+        passages: [
+          {
+            title: '《关于电子书的讨论》',
+            text:
+              '近年来，电子书越来越受欢迎。根据某调查机构的数据，2022 年我国电子书的销量比五年前增长了将近一倍。电子书体积小、容量大，一部平板电脑就能存下上千本书，携带十分方便。\n\n' +
+              '不过，也有人认为，电子书永远无法取代纸质书。他们觉得，纸质书翻页的手感和油墨的香味，是屏幕无论如何都给不了的。我个人认为，无论形式怎么改变，最重要的始终是阅读本身；只要愿意读，读什么、怎么读都无妨。',
+          },
+        ],
+        questions: [
+          {
+            id: 'fact-q1',
+            passage: 0,
+            marks: 2,
+            q: '「2022 年我国电子书的销量比五年前增长了将近一倍」——这句话是事实还是意见？请说明理由。',
+            model:
+              '这是事实。因为这句话引用了调查机构的具体数据，说的是电子书销量增长这一客观情况，有确切的时间（2022 年）和数据（增长将近一倍），可以通过查证核实其真假，并不带有个人的评价或感受，所以属于事实。',
+            criteria: [
+              '判断正确：事实',
+              '说明理由：有具体数据／时间，客观、可查证核实（不含主观评价）',
+            ],
+          },
+          {
+            id: 'fact-q2',
+            passage: 0,
+            marks: 2,
+            q: '「我个人认为，无论形式怎么改变，最重要的始终是阅读本身」——这句话是事实还是意见？为什么？',
+            model:
+              '这是意见。因为句中有「我个人认为」「最重要」这样表达个人看法和主观评价的词语，作者说的是自己对阅读的看法与态度，因人而异，无法用客观标准去核实真假，所以属于意见。',
+            criteria: [
+              '判断正确：意见',
+              '说明理由：含「我认为／最重要」等主观评价词，是个人看法，无法查证核实',
+            ],
+          },
+        ],
+      },
+
+      // 5. 词句理解与结构作用
+      {
+        id: 'structure',
+        icon: '🔍',
+        name: '词句理解与结构作用',
+        subtitle: 'Word/Sentence Meaning & Function · 承上启下 / 点明主旨 / 首尾呼应 / 设置悬念',
+        formula:
+          '<b>词语理解</b>：本义 + 文中义（联系上下文）+ 表达的情感／作用。<br>' +
+          '<b>句子／段落结构作用</b>：看位置——开头（总起、点题、设悬念、引出下文）；中间（<span class="text-emerald-700 font-bold">承上启下</span>／过渡）；结尾（总结全文、<span class="text-emerald-700 font-bold">点明主旨</span>、首尾呼应、深化中心）。',
+        tips: '问「加点词能否删去」→ 通常不能：先解释词义，再说「删去后意思变得绝对／不准确」，体现语言的准确严密。',
+        passages: [
+          {
+            title: '《外婆的菜园》',
+            text:
+              '小时候，外婆家屋后有一方小小的菜园。那是我童年最快乐的乐园。\n\n' +
+              '园子不大，却一年四季从不冷清。春有嫩绿的豌豆苗，夏有沉甸甸的黄瓜，秋有火红的辣椒，冬天则藏着一畦畦耐寒的青菜。外婆总说：「土地是不会骗人的，你对它用几分心，它就还你几分甜。」\n\n' +
+              '如今，那方菜园早已不在，外婆也已远去。可每当我在饭桌上尝到一口清甜的蔬菜，那座小小的菜园，那句朴素的话，便又清晰地浮现在我眼前。原来，外婆教给我的，何止是种菜——她教会我的，是如何用心地对待生活。',
+          },
+        ],
+        questions: [
+          {
+            id: 'struct-q1',
+            passage: 0,
+            marks: 2,
+            q: '第二段中「园子不大，却一年四季从不冷清」这句话在文中结构上有什么作用？',
+            model:
+              '这句话在结构上起承上启下（过渡）的作用。「园子不大」承接上文写菜园小巧的乐园，「一年四季从不冷清」则引出下文对春夏秋冬各季蔬菜的具体描写，使上下文衔接自然、结构紧凑。',
+            criteria: [
+              '点出结构作用：承上启下（过渡）',
+              '结合内容：承上文「乐园／菜园小」，启下文「四季蔬菜」的描写',
+            ],
+          },
+          {
+            id: 'struct-q2',
+            passage: 0,
+            marks: 3,
+            q: '文章结尾说「外婆教给我的，何止是种菜……是如何用心地对待生活」，这句话有什么作用？请结合全文分析。',
+            model:
+              '这句话位于结尾，起点明主旨、深化中心的作用。它由「种菜」这件小事，升华到「用心对待生活」的人生道理，揭示了全文的中心；同时与开头「童年的乐园」和外婆「用几分心，还你几分甜」的话首尾呼应，使文章浑然一体，情感真挚，也表达了「我」对外婆的怀念与感激。',
+            criteria: [
+              '点出作用：点明主旨、深化中心（卒章显志）',
+              '结合全文：由「种菜」升华到「用心对待生活」的道理',
+              '补充：首尾呼应／表达对外婆的怀念感激（任一即可）',
+            ],
+          },
+        ],
+      },
+
+      // 6. 开放思考与联系实际
+      {
+        id: 'openthink',
+        icon: '💡',
+        name: '开放思考与联系实际',
+        subtitle: 'Critical Thinking · 感悟启示 / 评价看法 / 联系生活的开放题',
+        formula:
+          '<b>①亮明观点</b>（我认为／我赞同……）→ <b>②回扣原文</b>（从文中找依据）→ ' +
+          '<b>③联系实际</b>（举自己或生活中的例子）→ <b>④总结提升</b>（该怎么做／有何启示）。<br>' +
+          '开放题<span class="text-emerald-700 font-bold">言之有理</span>即可，但一定要「有观点＋有依据＋有例子」，切忌空谈。',
+        tips: '拿满分秘诀：观点明确 + 结合原文一句 + 联系一个真实生活例子 + 一句落地的行动或感悟。',
+        passages: [
+          {
+            title: '《一次失败的实验》',
+            text:
+              '科学课上，小杰的小组要做一个「水火箭」的实验。他们满怀信心，可火箭一次次「扑通」栽进泥里，引来旁边同学的窃笑。组员们泄了气，纷纷说：「算了吧，反正也做不成。」\n\n' +
+              '只有小杰不肯放弃。他一遍遍地检查、调整水量和气压，把每一次失败的数据都认真记在本子上。放学后，别人都走了，他还蹲在操场上一次次试射。第七次，当火箭终于「嗖」地一声冲上蓝天时，夕阳把他满头的汗珠照得发亮。他后来在日记里写道：「原来，失败不是终点，它只是在提醒你——离成功，只差再试一次的勇气。」',
+          },
+        ],
+        questions: [
+          {
+            id: 'open-q1',
+            passage: 0,
+            marks: 3,
+            q: '读了这篇短文，小杰身上哪一种品质最让你感动？请联系自己的生活，谈谈你的感受和启示。',
+            model:
+              '最让我感动的是小杰坚持不懈、不怕失败的品质。文中组员一遇挫折就想放弃，而小杰却认真记录每次失败的数据、反复调整，直到第七次才成功，这份执着令人敬佩。这让我想起自己学骑自行车时，摔了好几次也曾想放弃，但正是坚持再试，我才终于学会。由此我明白：失败并不可怕，只要不轻言放弃，多试一次，成功往往就在下一次。今后遇到困难，我也要像小杰一样坚持到底。',
+            criteria: [
+              '亮明观点：指出打动自己的品质（坚持不懈／不怕失败等）',
+              '回扣原文：结合小杰记录数据、反复试射、第七次成功等内容',
+              '联系实际＋提升：举出自己的生活例子并写出启示／今后的做法',
+            ],
+          },
+          {
+            id: 'open-q2',
+            passage: 0,
+            marks: 3,
+            q: '小杰说「失败……只是在提醒你——离成功，只差再试一次的勇气」。你同意这种看法吗？为什么？',
+            model:
+              '我同意这种看法。因为失败往往能让我们发现问题、积累经验，就像小杰把每次失败的数据都记下来，才找到成功的方法；如果一失败就放弃，就永远到不了成功。当然，「再试一次」不是盲目重复，而要像小杰那样在反思和调整之后再尝试。在生活中也是如此，我曾在数学考试失利后认真订正错题、调整方法，成绩才慢慢进步。所以我认为，只要肯从失败中总结、鼓起勇气再试，成功就会离我们越来越近。',
+            criteria: [
+              '表明立场：同意（或有理有据地提出自己的看法）',
+              '结合原文说理：以小杰记录数据、反思调整、终获成功为依据',
+              '联系实际＋补充思辨：举生活例子，并点出「再试」需反思调整而非盲目重复',
+            ],
+          },
+        ],
+      },
+    ];
+  </script>
+
+  <!-- Alpine.js must load AFTER hclApp + HCL_DATA are defined -->
+  <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+  <script>
+    // initial icon render for any static icons before Alpine boots
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.lucide) window.lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
