@@ -711,7 +711,7 @@
               signal: controller.signal,
               body: JSON.stringify({
                 model: 'claude-sonnet-5',
-                max_tokens: 1500,
+                max_tokens: 4096,
                 thinking: { type: 'disabled' },
                 system: systemPrompt,
                 messages: [{ role: 'user', content: userContent }],
@@ -907,7 +907,7 @@
               signal: controller.signal,
               body: JSON.stringify({
                 model: 'claude-sonnet-5',
-                max_tokens: 1024,
+                max_tokens: 2048,
                 thinking: { type: 'disabled' },
                 system: systemPrompt,
                 messages: [{ role: 'user', content: userContent }],
@@ -971,14 +971,37 @@
           if (!text) return null;
           // strip code fences if present
           let t = text.trim().replace(/^```(?:json)?/i, '').replace(/```$/i, '').trim();
-          // try direct parse
-          try { return JSON.parse(t); } catch (e) {}
-          // try to extract first {...} block
+          const candidates = [t];
           const match = t.match(/\{[\s\S]*\}/);
-          if (match) {
-            try { return JSON.parse(match[0]); } catch (e) {}
+          if (match) candidates.push(match[0]);
+          for (const c of candidates) {
+            try { return JSON.parse(c); } catch (e) {}
+            // retry after escaping raw control chars (e.g. real newlines) inside strings
+            try { return JSON.parse(this.sanitizeJsonString(c)); } catch (e) {}
           }
           return null;
+        },
+
+        // escape raw control characters that appear *inside* JSON string values,
+        // which the model sometimes emits (real newlines in passage text) and which
+        // would otherwise make JSON.parse throw "Bad control character".
+        sanitizeJsonString(s) {
+          let out = '', inStr = false, esc = false;
+          for (let i = 0; i < s.length; i++) {
+            const c = s[i];
+            if (esc) { out += c; esc = false; continue; }
+            if (c === '\\') { out += c; esc = true; continue; }
+            if (c === '"') { inStr = !inStr; out += c; continue; }
+            if (inStr) {
+              if (c === '\n') { out += '\\n'; continue; }
+              if (c === '\r') { out += '\\r'; continue; }
+              if (c === '\t') { out += '\\t'; continue; }
+              const code = c.charCodeAt(0);
+              if (code < 0x20) { out += '\\u' + code.toString(16).padStart(4, '0'); continue; }
+            }
+            out += c;
+          }
+          return out;
         },
       };
     }
