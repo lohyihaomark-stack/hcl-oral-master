@@ -104,6 +104,15 @@
               <span x-text="apiKey ? '🟢 AI 批改就绪' : '🟡 模式：人工自评'"></span>
             </div>
 
+            <!-- 3D Storybook link -->
+            <a
+              href="/storybook"
+              class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold text-white bg-gradient-to-r from-cyan-500 to-violet-600 border border-transparent hover:shadow-md hover:brightness-110 transition-all"
+            >
+              <i data-lucide="book-open-text" class="w-4 h-4"></i>
+              <span class="hidden sm:inline">3D 故事馆</span>
+            </a>
+
             <!-- Settings button -->
             <button
               @click="showSettings = true"
