@@ -12,7 +12,7 @@
   <!-- Google Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=Noto+Serif+SC:wght@400;500;600;700&family=Orbitron:wght@500;700;900&family=Share+Tech+Mono&display=swap" rel="stylesheet" />
 
   <script>
     tailwind.config = {
@@ -21,6 +21,8 @@
           fontFamily: {
             sans: ['"Noto Sans SC"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
             serif: ['"Noto Serif SC"', 'ui-serif', 'Georgia', 'serif'],
+            display: ['Orbitron', 'ui-sans-serif', 'sans-serif'],
+            mono: ['"Share Tech Mono"', 'ui-monospace', 'monospace'],
           },
         },
       },
@@ -28,57 +30,203 @@
   </script>
 
   <style>
-    [x-cloak] { display: none !important; }
-    html { scroll-behavior: smooth; }
-    body { -webkit-font-smoothing: antialiased; }
-
-    /* Custom scrollbar */
-    ::-webkit-scrollbar { width: 10px; height: 10px; }
-    ::-webkit-scrollbar-track { background: transparent; }
-    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; border: 2px solid transparent; background-clip: content-box; }
-    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; background-clip: content-box; }
-
-    .glass {
-      background: rgba(255, 255, 255, 0.72);
-      backdrop-filter: blur(16px) saturate(160%);
-      -webkit-backdrop-filter: blur(16px) saturate(160%);
+    :root {
+      --bg: #04050d;
+      --panel: rgba(13, 17, 40, 0.55);
+      --cyan: #22e0ff;
+      --pink: #ff3ea5;
+      --purple: #b16bff;
+      --lime: #9dff5b;
+      --amber: #ffcf4a;
+      --text: #e8f0ff;
+      --muted: #8b95c9;
+      --dim: #6a75a8;
+      --line: rgba(110, 140, 255, 0.18);
+      --line-bright: rgba(80, 220, 255, 0.55);
     }
 
-    /* Loading dots */
-    @keyframes bounceDot { 0%, 80%, 100% { transform: scale(0.6); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
+    [x-cloak] { display: none !important; }
+    html { scroll-behavior: smooth; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+    .muted { color: var(--muted); }
+    .dim { color: var(--dim); }
+
+    /* ---------- scrollbars ---------- */
+    ::-webkit-scrollbar { width: 10px; height: 10px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb {
+      background: linear-gradient(#22e0ff44, #b16bff44);
+      border-radius: 9999px; border: 2px solid transparent; background-clip: content-box;
+    }
+    ::-webkit-scrollbar-thumb:hover { background: linear-gradient(#22e0ff88, #b16bff88); background-clip: content-box; }
+    ::selection { background: rgba(34, 224, 255, 0.3); color: #fff; }
+
+    /* ---------- animated background ---------- */
+    .fx { position: fixed; inset: 0; pointer-events: none; z-index: -1; }
+    .fx-orbs::before, .fx-orbs::after {
+      content: ''; position: absolute; border-radius: 50%; filter: blur(90px); opacity: 0.55;
+    }
+    .fx-orbs::before {
+      width: 540px; height: 540px; left: -140px; top: -160px;
+      background: radial-gradient(circle, #123f8f, transparent 70%);
+      animation: float1 17s ease-in-out infinite;
+    }
+    .fx-orbs::after {
+      width: 600px; height: 600px; right: -180px; top: 18%;
+      background: radial-gradient(circle, #7a1f6b, transparent 70%);
+      animation: float2 21s ease-in-out infinite;
+    }
+    @keyframes float1 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(70px, 60px); } }
+    @keyframes float2 { 0%, 100% { transform: translate(0, 0); } 50% { transform: translate(-80px, 50px); } }
+    .fx-grid {
+      background-image:
+        linear-gradient(rgba(90, 190, 255, 0.06) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(90, 190, 255, 0.06) 1px, transparent 1px);
+      background-size: 46px 46px;
+      -webkit-mask-image: radial-gradient(ellipse 95% 75% at 50% 0%, #000 35%, transparent 100%);
+      mask-image: radial-gradient(ellipse 95% 75% at 50% 0%, #000 35%, transparent 100%);
+      animation: gridpan 20s linear infinite;
+    }
+    @keyframes gridpan { from { background-position: 0 0, 0 0; } to { background-position: 46px 46px, 46px 46px; } }
+    .fx-scan {
+      background: repeating-linear-gradient(0deg, rgba(0,0,0,0) 0, rgba(0,0,0,0) 2px, rgba(0, 12, 24, 0.14) 3px, rgba(0,0,0,0) 4px);
+      opacity: 0.6;
+    }
+    .fx-vig { background: radial-gradient(ellipse at 50% 35%, transparent 52%, rgba(0,0,0,0.6) 100%); }
+
+    /* ---------- glass panels ---------- */
+    .panel {
+      position: relative;
+      background: var(--panel);
+      backdrop-filter: blur(14px) saturate(140%);
+      -webkit-backdrop-filter: blur(14px) saturate(140%);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,0.05), 0 22px 55px -24px rgba(0,0,0,0.85);
+    }
+    .panel-cyan { box-shadow: 0 0 26px -8px rgba(34,224,255,0.35), inset 0 1px 0 rgba(255,255,255,0.05), 0 22px 55px -24px rgba(0,0,0,0.85); }
+    .panel-pink { box-shadow: 0 0 26px -8px rgba(255,62,165,0.35), inset 0 1px 0 rgba(255,255,255,0.05), 0 22px 55px -24px rgba(0,0,0,0.85); }
+    .lift { transition: transform 0.25s cubic-bezier(0.16,1,0.3,1), box-shadow 0.25s; }
+    .lift:hover { transform: translateY(-3px); }
+
+    /* HUD corner brackets */
+    .hud::before, .hud::after {
+      content: ''; position: absolute; width: 15px; height: 15px; pointer-events: none;
+    }
+    .hud::before { top: -1px; left: -1px; border-top: 2px solid var(--cyan); border-left: 2px solid var(--cyan); border-top-left-radius: 6px; opacity: 0.75; }
+    .hud::after { bottom: -1px; right: -1px; border-bottom: 2px solid var(--pink); border-right: 2px solid var(--pink); border-bottom-right-radius: 6px; opacity: 0.75; box-shadow: 0 0 10px rgba(255,62,165,0.4); }
+
+    /* chamfered (cyberpunk cut) corner */
+    .chamfer { clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px), calc(100% - 9px) 100%, 0 100%, 0 9px); }
+
+    /* ---------- neon text ---------- */
+    .neon-cyan { color: var(--cyan); text-shadow: 0 0 10px rgba(34,224,255,0.65); }
+    .neon-pink { color: var(--pink); text-shadow: 0 0 10px rgba(255,62,165,0.65); }
+    .neon-lime { color: var(--lime); text-shadow: 0 0 10px rgba(157,255,91,0.6); }
+    .neon-purple { color: var(--purple); text-shadow: 0 0 10px rgba(177,107,255,0.6); }
+    .neon-amber { color: var(--amber); text-shadow: 0 0 10px rgba(255,207,74,0.55); }
+
+    .title-glow {
+      font-family: 'Orbitron', sans-serif; letter-spacing: 0.01em;
+      background: linear-gradient(90deg, #22e0ff, #b16bff 55%, #ff3ea5);
+      -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+      filter: drop-shadow(0 0 12px rgba(90,180,255,0.35));
+    }
+    @keyframes flick { 0%, 18%, 22%, 25%, 53%, 57%, 100% { opacity: 1; } 20%, 24%, 55% { opacity: 0.72; } }
+    .flicker { animation: flick 7s infinite; }
+    .font-hud { font-family: 'Share Tech Mono', monospace; letter-spacing: 0.06em; }
+    .font-disp { font-family: 'Orbitron', sans-serif; }
+
+    /* ---------- buttons ---------- */
+    .btn { position: relative; overflow: hidden; font-weight: 700; transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s; }
+    .btn:active { transform: scale(0.96); }
+    .btn::after {
+      content: ''; position: absolute; inset: 0;
+      background: linear-gradient(115deg, transparent 32%, rgba(255,255,255,0.28) 50%, transparent 68%);
+      transform: translateX(-130%);
+    }
+    .btn:hover::after { transform: translateX(130%); transition: transform 0.75s ease; }
+    .btn-cyan { background: linear-gradient(135deg, #0e7c9b, #22e0ff); color: #04121a; box-shadow: 0 0 20px -5px rgba(34,224,255,0.7); }
+    .btn-cyan:hover { box-shadow: 0 0 28px -4px rgba(34,224,255,0.9); }
+    .btn-pink { background: linear-gradient(135deg, #b322a0, #ff3ea5); color: #fff; box-shadow: 0 0 20px -5px rgba(255,62,165,0.7); }
+    .btn-pink:hover { box-shadow: 0 0 28px -4px rgba(255,62,165,0.9); }
+    .btn-lime { background: linear-gradient(135deg, #4fa524, #9dff5b); color: #06210a; box-shadow: 0 0 20px -5px rgba(157,255,91,0.6); }
+    .btn-ghost { background: rgba(120,150,255,0.07); border: 1px solid var(--line); color: var(--text); }
+    .btn-ghost:hover { border-color: var(--line-bright); box-shadow: 0 0 16px -5px var(--line-bright); color: #fff; }
+
+    /* ---------- fields ---------- */
+    .field {
+      background: rgba(6, 9, 22, 0.72); border: 1px solid var(--line); color: var(--text);
+      transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .field::placeholder { color: #59648f; }
+    .field:focus {
+      outline: none; border-color: var(--cyan);
+      box-shadow: 0 0 0 3px rgba(34,224,255,0.14), 0 0 20px -6px rgba(34,224,255,0.6);
+      background: rgba(8, 12, 28, 0.85);
+    }
+
+    /* ---------- tabs ---------- */
+    .tab { transition: all 0.2s; border: 1px solid var(--line); color: var(--muted); background: rgba(120,150,255,0.05); }
+    .tab:hover { color: #fff; border-color: var(--line-bright); }
+    .tab-on { color: #04121a; background: linear-gradient(135deg, #22e0ff, #6ad0ff); border-color: transparent; box-shadow: 0 0 22px -6px rgba(34,224,255,0.8); }
+
+    /* neon checkbox */
+    .neon-check { accent-color: #22e0ff; }
+
+    /* reading panel: darker & high-contrast for comfortable reading */
+    .read-panel { background: linear-gradient(180deg, rgba(9,12,28,0.92), rgba(6,9,20,0.94)); }
+
+    /* animated gradient hairline */
+    .rule-glow { height: 1px; background: linear-gradient(90deg, transparent, var(--cyan), var(--purple), var(--pink), transparent); opacity: 0.5; }
+
+    /* ---------- keyframe utilities ---------- */
+    @keyframes floatUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+    .animate-float-up { animation: floatUp 0.5s cubic-bezier(0.16,1,0.3,1) both; }
+    @keyframes bounceDot { 0%, 80%, 100% { transform: scale(0.5); opacity: 0.4; } 40% { transform: scale(1); opacity: 1; } }
     .dot { animation: bounceDot 1.4s infinite ease-in-out both; }
     .dot:nth-child(1) { animation-delay: -0.32s; }
     .dot:nth-child(2) { animation-delay: -0.16s; }
-
-    @keyframes floatUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: translateY(0); } }
-    .animate-float-up { animation: floatUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both; }
+    @keyframes pulseGlow { 0%, 100% { box-shadow: 0 0 0 0 rgba(34,224,255,0.0); } 50% { box-shadow: 0 0 22px -4px rgba(34,224,255,0.55); } }
+    .pulse-glow { animation: pulseGlow 2.2s ease-in-out infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spin { animation: spin 0.9s linear infinite; }
+    @keyframes sheen { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
 
     .passage-scroll { max-height: 460px; }
-    .tab-active-glow { box-shadow: 0 8px 24px -8px rgba(16, 185, 129, 0.55); }
   </style>
 </head>
 
-<body class="font-sans bg-slate-50 text-slate-800 antialiased">
+<body class="font-sans antialiased">
+  <!-- ===== animated background layers ===== -->
+  <div class="fx fx-orbs"></div>
+  <div class="fx fx-grid"></div>
+  <div class="fx fx-scan"></div>
+  <div class="fx fx-vig"></div>
+
   <div
     x-data="hclApp()"
     x-init="init()"
     x-cloak
-    class="min-h-screen flex flex-col"
+    class="min-h-screen flex flex-col relative"
   >
     <!-- ================= TOP NAV ================= -->
-    <header class="sticky top-0 z-40 glass border-b border-slate-200/70">
+    <header class="sticky top-0 z-40 border-b border-[color:var(--line)]" style="background: rgba(5,7,16,0.72); backdrop-filter: blur(14px);">
       <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex items-center justify-between h-16 gap-3">
           <!-- Brand -->
           <div class="flex items-center gap-3 min-w-0">
-            <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-indigo-600 flex items-center justify-center shadow-lg shrink-0">
-              <i data-lucide="book-open-check" class="w-5 h-5 text-white"></i>
+            <div class="relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0 pulse-glow chamfer" style="background: linear-gradient(135deg,#0e7c9b,#b16bff);">
+              <i data-lucide="cpu" class="w-5 h-5 text-white"></i>
             </div>
             <div class="min-w-0">
-              <h1 class="text-base sm:text-lg font-black tracking-tight text-slate-900 truncate">
-                中一高华阅读理解<span class="text-emerald-600">·</span>AI智能特训站
-              </h1>
-              <p class="text-[11px] text-slate-500 -mt-0.5 hidden sm:block">Sec 1 Higher Chinese · 阅读理解 AI 自动批改</p>
+              <h1 class="text-base sm:text-lg font-black tracking-tight title-glow flicker truncate">中一高华阅读理解·AI智能特训站</h1>
+              <p class="text-[10px] font-hud dim -mt-0.5 hidden sm:block">SEC 1 HIGHER CHINESE // AI READING TERMINAL</p>
             </div>
           </div>
 
@@ -86,30 +234,20 @@
           <div class="flex items-center gap-2 sm:gap-3 shrink-0">
             <!-- Status badge -->
             <div
-              class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border transition-colors"
-              :class="apiKey
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-                : 'bg-amber-50 text-amber-700 border-amber-200'"
+              class="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold font-hud border transition-colors"
+              :class="apiKey ? 'text-[color:var(--lime)] border-[color:var(--lime)]' : 'text-[color:var(--amber)] border-[color:var(--amber)]'"
+              :style="apiKey ? 'background:rgba(157,255,91,0.08);box-shadow:0 0 16px -6px rgba(157,255,91,0.6)' : 'background:rgba(255,207,74,0.08);box-shadow:0 0 16px -6px rgba(255,207,74,0.5)'"
             >
               <span class="relative flex h-2 w-2">
-                <span
-                  class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75"
-                  :class="apiKey ? 'bg-emerald-400' : 'bg-amber-400'"
-                ></span>
-                <span
-                  class="relative inline-flex rounded-full h-2 w-2"
-                  :class="apiKey ? 'bg-emerald-500' : 'bg-amber-500'"
-                ></span>
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full opacity-75" :class="apiKey ? 'bg-[color:var(--lime)]' : 'bg-[color:var(--amber)]'"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2" :class="apiKey ? 'bg-[color:var(--lime)]' : 'bg-[color:var(--amber)]'"></span>
               </span>
-              <span x-text="apiKey ? '🟢 AI 批改就绪' : '🟡 模式：人工自评'"></span>
+              <span x-text="apiKey ? 'AI 批改就绪' : '模式：人工自评'"></span>
             </div>
 
             <!-- Settings button -->
-            <button
-              @click="showSettings = true"
-              class="flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-xl text-sm font-semibold text-slate-700 bg-white border border-slate-200 hover:border-emerald-300 hover:text-emerald-700 hover:shadow-md transition-all"
-            >
-              <i data-lucide="settings-2" class="w-4 h-4"></i>
+            <button @click="showSettings = true" class="btn btn-ghost chamfer flex items-center gap-1.5 px-3 sm:px-4 py-2 rounded-lg text-sm font-semibold">
+              <i data-lucide="settings-2" class="w-4 h-4 neon-cyan"></i>
               <span class="hidden sm:inline">API 密钥设置</span>
             </button>
           </div>
@@ -119,33 +257,32 @@
 
     <!-- ================= HERO / STATS ================= -->
     <section class="max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 pt-6">
-      <div class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-indigo-600 via-indigo-600 to-emerald-600 p-6 sm:p-8 text-white shadow-xl">
-        <div class="absolute -top-12 -right-12 w-52 h-52 rounded-full bg-white/10 blur-2xl"></div>
-        <div class="absolute -bottom-16 -left-8 w-52 h-52 rounded-full bg-emerald-300/20 blur-2xl"></div>
+      <div class="panel hud chamfer relative overflow-hidden p-6 sm:p-8">
+        <div class="absolute inset-0 opacity-30" style="background: radial-gradient(circle at 15% 20%, rgba(34,224,255,0.25), transparent 45%), radial-gradient(circle at 85% 80%, rgba(255,62,165,0.22), transparent 45%);"></div>
         <div class="relative flex flex-col md:flex-row md:items-center md:justify-between gap-5">
           <div class="max-w-2xl">
-            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-xs font-semibold mb-3">
-              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 六大核心答题技能 · MOE 评分标准
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-hud font-bold mb-3 border border-[color:var(--line-bright)] neon-cyan" style="background:rgba(34,224,255,0.06);">
+              <i data-lucide="sparkles" class="w-3.5 h-3.5"></i> 六大核心答题技能 // MOE 评分标准
             </div>
             <h2 class="text-xl sm:text-2xl font-black leading-snug">
-              读懂文章，答对得分。让 AI 老师陪你逐题精练。
+              读懂文章，<span class="neon-cyan">答对得分</span>。让 <span class="neon-pink">AI 老师</span> 陪你逐题精练。
             </h2>
-            <p class="text-sm text-indigo-100 mt-2 leading-relaxed">
+            <p class="text-sm muted mt-2 leading-relaxed">
               掌握「答题公式 → 精读语段 → 作答 → AI 即时批改」的闭环，把每一分都拿稳。
             </p>
           </div>
           <div class="grid grid-cols-3 gap-3 shrink-0">
-            <div class="text-center px-3 py-3 rounded-2xl bg-white/10 backdrop-blur">
-              <div class="text-2xl font-black">6</div>
-              <div class="text-[11px] text-indigo-100 mt-0.5">技能专项</div>
+            <div class="text-center px-3 py-3 rounded-2xl chamfer border border-[color:var(--line)]" style="background:rgba(120,150,255,0.05);">
+              <div class="text-2xl font-black font-disp neon-cyan">6</div>
+              <div class="text-[10px] font-hud dim mt-0.5">技能专项</div>
             </div>
-            <div class="text-center px-3 py-3 rounded-2xl bg-white/10 backdrop-blur">
-              <div class="text-2xl font-black" x-text="totalQuestions"></div>
-              <div class="text-[11px] text-indigo-100 mt-0.5">精选题目</div>
+            <div class="text-center px-3 py-3 rounded-2xl chamfer border border-[color:var(--line)]" style="background:rgba(120,150,255,0.05);">
+              <div class="text-2xl font-black font-disp neon-purple" x-text="totalQuestions"></div>
+              <div class="text-[10px] font-hud dim mt-0.5">精选题目</div>
             </div>
-            <div class="text-center px-3 py-3 rounded-2xl bg-white/10 backdrop-blur">
-              <div class="text-2xl font-black" x-text="answeredCount"></div>
-              <div class="text-[11px] text-indigo-100 mt-0.5">已作答</div>
+            <div class="text-center px-3 py-3 rounded-2xl chamfer border border-[color:var(--line)]" style="background:rgba(120,150,255,0.05);">
+              <div class="text-2xl font-black font-disp neon-pink" x-text="answeredCount"></div>
+              <div class="text-[10px] font-hud dim mt-0.5">已作答</div>
             </div>
           </div>
         </div>
@@ -158,10 +295,8 @@
         <template x-for="(cat, idx) in categories" :key="cat.id">
           <button
             @click="activeCat = idx"
-            class="snap-start shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold border transition-all duration-200"
-            :class="activeCat === idx
-              ? 'bg-emerald-600 text-white border-emerald-600 tab-active-glow'
-              : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-300 hover:text-emerald-700'"
+            class="tab snap-start shrink-0 flex items-center gap-2 px-4 py-2.5 rounded-xl chamfer text-sm font-bold"
+            :class="activeCat === idx ? 'tab-on' : ''"
           >
             <span class="text-base" x-text="cat.icon"></span>
             <span x-text="cat.name"></span>
@@ -176,27 +311,27 @@
         <div x-show="activeCat === idx" class="animate-float-up">
 
           <!-- Formula card -->
-          <div class="rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden mb-6">
-            <div class="px-5 sm:px-6 py-4 bg-gradient-to-r from-slate-50 to-white border-b border-slate-100 flex items-start gap-3">
-              <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-emerald-500 to-indigo-500 flex items-center justify-center text-xl shrink-0 shadow">
+          <div class="panel panel-cyan hud lift overflow-hidden mb-6">
+            <div class="px-5 sm:px-6 py-4 border-b border-[color:var(--line)] flex items-start gap-3" style="background:linear-gradient(90deg,rgba(34,224,255,0.06),transparent);">
+              <div class="w-11 h-11 rounded-xl chamfer flex items-center justify-center text-xl shrink-0" style="background:linear-gradient(135deg,#0e7c9b,#b16bff);box-shadow:0 0 18px -6px rgba(34,224,255,0.7);">
                 <span x-text="cat.icon"></span>
               </div>
               <div class="min-w-0">
-                <h3 class="text-lg font-black text-slate-900" x-text="cat.name"></h3>
-                <p class="text-xs text-slate-500 mt-0.5" x-text="cat.subtitle"></p>
+                <h3 class="text-lg font-black" x-text="cat.name"></h3>
+                <p class="text-xs font-hud dim mt-0.5" x-text="cat.subtitle"></p>
               </div>
             </div>
             <div class="px-5 sm:px-6 py-4">
               <div class="flex items-center gap-2 mb-3">
-                <i data-lucide="key-round" class="w-4 h-4 text-emerald-600"></i>
-                <span class="text-sm font-bold text-emerald-700">答题公式 · Answering Formula</span>
+                <i data-lucide="key-round" class="w-4 h-4 neon-cyan"></i>
+                <span class="text-sm font-bold neon-cyan font-hud">答题公式 // ANSWERING FORMULA</span>
               </div>
-              <div class="rounded-2xl bg-emerald-50/70 border border-emerald-100 px-4 py-3.5">
-                <p class="font-serif text-[15px] leading-loose text-slate-800" x-html="cat.formula"></p>
+              <div class="rounded-xl chamfer px-4 py-3.5 border border-[color:var(--line-bright)]" style="background:rgba(34,224,255,0.05);">
+                <p class="font-serif text-[15px] leading-loose" style="color:#dbe6ff;" x-html="cat.formula"></p>
               </div>
               <template x-if="cat.tips">
-                <p class="text-xs text-slate-500 mt-3 flex items-start gap-1.5">
-                  <i data-lucide="lightbulb" class="w-3.5 h-3.5 text-amber-500 mt-0.5 shrink-0"></i>
+                <p class="text-xs dim mt-3 flex items-start gap-1.5">
+                  <i data-lucide="lightbulb" class="w-3.5 h-3.5 neon-amber mt-0.5 shrink-0"></i>
                   <span x-text="cat.tips"></span>
                 </p>
               </template>
@@ -204,39 +339,38 @@
           </div>
 
           <!-- Question-bank refresh bar -->
-          <div class="mb-4 rounded-2xl bg-white border border-slate-200 shadow-sm px-4 sm:px-5 py-3">
+          <div class="panel hud mb-4 px-4 sm:px-5 py-3">
             <div class="flex flex-wrap items-center justify-between gap-3">
-              <div class="flex items-center gap-2 text-sm text-slate-600 min-w-0">
-                <i data-lucide="library" class="w-4 h-4 text-indigo-600 shrink-0"></i>
-                <span class="font-semibold shrink-0">题库</span>
-                <span class="text-slate-400 shrink-0">第 <span class="font-bold text-indigo-600" x-text="(catSet[cat.id] || 0) + 1"></span> / <span x-text="cat.sets.length"></span> 组</span>
+              <div class="flex items-center gap-2 text-sm muted min-w-0">
+                <i data-lucide="library" class="w-4 h-4 neon-purple shrink-0"></i>
+                <span class="font-bold font-hud shrink-0" style="color:#c7d2ff;">题库</span>
+                <span class="dim shrink-0 font-hud">第 <span class="font-bold neon-cyan" x-text="(catSet[cat.id] || 0) + 1"></span> / <span x-text="cat.sets.length"></span> 组</span>
                 <span
                   x-show="curSet(cat).generated"
-                  class="shrink-0 text-[11px] font-bold px-2 py-0.5 rounded-md bg-fuchsia-50 text-fuchsia-600 border border-fuchsia-200"
+                  class="shrink-0 text-[10px] font-bold font-hud px-2 py-0.5 rounded-md border neon-pink"
+                  style="background:rgba(255,62,165,0.08);border-color:var(--pink);"
                 >✨ AI 原创</span>
-                <span class="hidden sm:inline text-slate-300">·</span>
-                <span class="hidden sm:inline text-xs text-slate-400 truncate" x-text="curSet(cat).passage.title"></span>
+                <span class="hidden sm:inline dim">·</span>
+                <span class="hidden sm:inline text-xs dim truncate" x-text="curSet(cat).passage.title"></span>
               </div>
               <div class="flex items-center gap-2">
                 <button
                   x-show="curSet(cat).generated"
                   @click="deleteCurrentSet(cat)"
                   title="删除这组 AI 原创题目"
-                  class="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-sm font-semibold text-slate-400 bg-slate-100 hover:bg-rose-50 hover:text-rose-500 transition-all active:scale-95"
+                  class="btn btn-ghost inline-flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm"
+                  style="color:var(--dim);"
                 >
                   <i data-lucide="trash-2" class="w-4 h-4"></i>
                 </button>
-                <button
-                  @click="refreshSet(cat)"
-                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-sm font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-all active:scale-95"
-                >
-                  <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+                <button @click="refreshSet(cat)" class="btn btn-ghost chamfer inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg text-sm font-bold">
+                  <i data-lucide="refresh-cw" class="w-4 h-4 neon-cyan"></i>
                   <span class="hidden sm:inline">换一篇</span>
                 </button>
                 <button
                   @click="generateSet(cat)"
                   :disabled="genLoading[cat.id]"
-                  class="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-fuchsia-600 to-indigo-600 hover:from-fuchsia-700 hover:to-indigo-700 shadow-md hover:shadow-lg transition-all active:scale-95 disabled:opacity-60 disabled:cursor-not-allowed"
+                  class="btn btn-pink chamfer inline-flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed"
                 >
                   <template x-if="!genLoading[cat.id]">
                     <span class="inline-flex items-center gap-2">
@@ -246,65 +380,63 @@
                   </template>
                   <template x-if="genLoading[cat.id]">
                     <span class="inline-flex items-center gap-2">
-                      <i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i>
+                      <i data-lucide="loader-circle" class="w-4 h-4 spin"></i>
                       AI 命题中…
                     </span>
                   </template>
                 </button>
               </div>
             </div>
-            <!-- generation loading / error -->
-            <div x-show="genLoading[cat.id]" class="mt-3 flex items-center gap-2 text-xs text-fuchsia-600" x-cloak>
+            <div x-show="genLoading[cat.id]" class="mt-3 flex items-center gap-2 text-xs neon-pink" x-cloak>
               <i data-lucide="wand-sparkles" class="w-3.5 h-3.5"></i>
               🤖 AI 老师正在为你原创一篇全新的语段与题目，请稍候…
             </div>
-            <div x-show="genError[cat.id]" class="mt-3 flex items-start gap-1.5 text-xs text-rose-600" x-cloak>
+            <div x-show="genError[cat.id]" class="mt-3 flex items-start gap-1.5 text-xs" style="color:#ff6b8f;" x-cloak>
               <i data-lucide="triangle-alert" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i>
               <span x-text="genError[cat.id]"></span>
             </div>
-            <p class="mt-2 text-[11px] text-slate-400">
-              <span class="font-semibold text-slate-500">换一篇</span> = 切换题库里的已有文章；
-              <span class="font-semibold text-fuchsia-600">AI 出新题</span> = 让 Claude 现场原创一套全新题目（需已设置 API 密钥），可无限出题。
-              <span class="text-slate-300">·</span>
-              AI 原创题目会<span class="font-semibold text-emerald-600">自动保存到本机浏览器</span>，日积月累可攒成上百篇题库（本机已存
-              <span class="font-bold text-emerald-600" x-text="generatedCount"></span> 组）。
+            <div class="rule-glow my-2.5"></div>
+            <p class="text-[11px] dim">
+              <span class="font-semibold" style="color:var(--muted);">换一篇</span> = 切换题库里的已有文章；
+              <span class="font-semibold neon-pink">AI 出新题</span> = 让 Claude 现场原创一套全新题目（需已设置 API 密钥），可无限出题。
+              <span class="dim">·</span>
+              AI 原创题目会<span class="font-semibold neon-lime">自动保存到本机浏览器</span>，日积月累可攒成上百篇题库（本机已存
+              <span class="font-bold neon-lime" x-text="generatedCount"></span> 组）。
             </p>
           </div>
 
           <!-- Passage + Questions grid -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
 
-            <!-- LEFT: Passage (current set) -->
+            <!-- LEFT: Passage -->
             <div class="space-y-5 lg:sticky lg:top-20 self-start">
-              <article class="rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden animate-float-up" :key="curSet(cat).passage.title">
-                <div class="px-5 py-3.5 bg-slate-900 text-white flex items-center justify-between">
+              <article class="panel hud lift overflow-hidden animate-float-up" :key="curSet(cat).passage.title">
+                <div class="px-5 py-3.5 flex items-center justify-between border-b border-[color:var(--line)]" style="background:linear-gradient(90deg,rgba(177,107,255,0.1),transparent);">
                   <div class="flex items-center gap-2 min-w-0">
-                    <i data-lucide="file-text" class="w-4 h-4 text-emerald-300 shrink-0"></i>
-                    <h4 class="text-sm font-bold truncate" x-text="curSet(cat).passage.title"></h4>
+                    <i data-lucide="file-text" class="w-4 h-4 neon-cyan shrink-0"></i>
+                    <h4 class="text-sm font-bold truncate" style="color:#e6ecff;" x-text="curSet(cat).passage.title"></h4>
                   </div>
-                  <span class="text-[11px] text-slate-400 shrink-0">阅读语段</span>
+                  <span class="text-[10px] font-hud dim shrink-0">阅读语段 // PASSAGE</span>
                 </div>
-                <div class="px-5 sm:px-6 py-5 overflow-y-auto passage-scroll">
-                  <p class="font-serif text-[17px] leading-loose text-slate-800 whitespace-pre-line" x-text="curSet(cat).passage.text"></p>
+                <div class="read-panel px-5 sm:px-6 py-5 overflow-y-auto passage-scroll">
+                  <p class="font-serif text-[17px] leading-loose whitespace-pre-line" style="color:#dde6ff;" x-text="curSet(cat).passage.text"></p>
                 </div>
               </article>
             </div>
 
-            <!-- RIGHT: Questions (current set) -->
+            <!-- RIGHT: Questions -->
             <div class="space-y-5">
               <template x-for="(q, qIdx) in curSet(cat).questions" :key="q.id">
-                <div class="rounded-3xl bg-white border border-slate-200 shadow-sm overflow-hidden">
+                <div class="panel hud lift overflow-hidden">
                   <!-- Question header -->
                   <div class="px-5 sm:px-6 pt-5 pb-4">
-                    <div class="flex items-start justify-between gap-3">
-                      <div class="flex items-start gap-3 min-w-0">
-                        <span class="shrink-0 w-7 h-7 rounded-lg bg-indigo-100 text-indigo-700 font-black text-sm flex items-center justify-center" x-text="qIdx + 1"></span>
-                        <div class="min-w-0">
-                          <p class="text-[15px] font-bold text-slate-900 leading-snug" x-text="q.q"></p>
-                          <div class="flex flex-wrap items-center gap-2 mt-1.5">
-                            <span class="text-[11px] font-semibold px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-100" x-text="q.marks + ' 分'"></span>
-                            <span class="text-[11px] text-slate-400">对照上方语段作答</span>
-                          </div>
+                    <div class="flex items-start gap-3 min-w-0">
+                      <span class="shrink-0 w-7 h-7 rounded-lg chamfer font-black font-disp text-sm flex items-center justify-center neon-cyan" style="background:rgba(34,224,255,0.1);border:1px solid var(--line-bright);" x-text="qIdx + 1"></span>
+                      <div class="min-w-0">
+                        <p class="text-[15px] font-bold leading-snug" style="color:#eaf0ff;" x-text="q.q"></p>
+                        <div class="flex flex-wrap items-center gap-2 mt-1.5">
+                          <span class="text-[11px] font-bold font-hud px-2 py-0.5 rounded-md border neon-amber" style="background:rgba(255,207,74,0.08);border-color:rgba(255,207,74,0.4);" x-text="q.marks + ' 分'"></span>
+                          <span class="text-[11px] dim font-hud">对照上方语段作答</span>
                         </div>
                       </div>
                     </div>
@@ -312,46 +444,43 @@
 
                   <!-- Answer input -->
                   <div class="px-5 sm:px-6 pb-4">
-                    <label class="text-xs font-semibold text-slate-500 mb-1.5 block">✍️ 我的作答</label>
+                    <label class="text-[11px] font-hud font-semibold dim mb-1.5 block">✍️ 我的作答 // INPUT</label>
                     <textarea
                       x-model="state[q.id].answer"
                       rows="4"
                       :placeholder="'请根据语段作答（' + q.marks + ' 分）……运用答题公式，写出要点并结合原文。'"
-                      class="w-full rounded-2xl border border-slate-200 bg-slate-50/60 px-4 py-3 font-serif text-[15px] leading-relaxed text-slate-800 placeholder:text-slate-400 placeholder:font-sans placeholder:text-[13px] focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition resize-y"
+                      class="field w-full rounded-xl px-4 py-3 font-serif text-[15px] leading-relaxed placeholder:font-sans placeholder:text-[13px] resize-y"
                     ></textarea>
 
                     <div class="flex flex-wrap items-center gap-2 mt-3">
                       <button
                         @click="markAnswer(curSet(cat), q)"
                         :disabled="state[q.id].loading"
-                        class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:from-emerald-700 hover:to-emerald-600 shadow-md hover:shadow-lg disabled:opacity-60 disabled:cursor-not-allowed transition-all"
+                        class="btn btn-cyan chamfer inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-sm font-bold disabled:opacity-60 disabled:cursor-not-allowed"
                       >
                         <template x-if="!state[q.id].loading">
                           <span class="inline-flex items-center gap-2">
-                            <i data-lucide="sparkles" class="w-4 h-4"></i>
+                            <i data-lucide="scan-line" class="w-4 h-4"></i>
                             <span x-text="apiKey ? '提交 · AI 批改' : '提交 · 对照评分'"></span>
                           </span>
                         </template>
                         <template x-if="state[q.id].loading">
                           <span class="inline-flex items-center gap-2">
-                            <i data-lucide="loader-circle" class="w-4 h-4 animate-spin"></i>
+                            <i data-lucide="loader-circle" class="w-4 h-4 spin"></i>
                             批改中…
                           </span>
                         </template>
                       </button>
 
-                      <button
-                        @click="toggleModel(q)"
-                        class="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
-                      >
-                        <i data-lucide="book-open" class="w-4 h-4"></i>
+                      <button @click="toggleModel(q)" class="btn btn-ghost inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-sm font-semibold">
+                        <i data-lucide="book-open" class="w-4 h-4 neon-purple"></i>
                         <span x-text="state[q.id].showModel ? '收起参考答案' : '查看参考答案'"></span>
                       </button>
 
                       <button
                         x-show="state[q.id].answer || state[q.id].ai || state[q.id].showModel"
                         @click="resetQuestion(q)"
-                        class="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-xl text-sm font-medium text-slate-400 hover:text-rose-500 transition-colors"
+                        class="inline-flex items-center gap-1.5 px-3 py-2.5 rounded-lg text-sm font-medium dim hover:text-[color:var(--pink)] transition-colors"
                       >
                         <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
                         重做
@@ -361,71 +490,68 @@
 
                   <!-- Loading state -->
                   <div x-show="state[q.id].loading" class="px-5 sm:px-6 pb-5" x-cloak>
-                    <div class="rounded-2xl bg-gradient-to-br from-indigo-50 to-emerald-50 border border-indigo-100 px-5 py-6 flex flex-col items-center text-center">
+                    <div class="rounded-xl chamfer px-5 py-6 flex flex-col items-center text-center border border-[color:var(--line-bright)]" style="background:rgba(34,224,255,0.05);">
                       <div class="flex items-center gap-1.5 mb-3">
-                        <span class="dot w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
-                        <span class="dot w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
-                        <span class="dot w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                        <span class="dot w-2.5 h-2.5 rounded-full" style="background:var(--cyan);box-shadow:0 0 8px var(--cyan);"></span>
+                        <span class="dot w-2.5 h-2.5 rounded-full" style="background:var(--pink);box-shadow:0 0 8px var(--pink);"></span>
+                        <span class="dot w-2.5 h-2.5 rounded-full" style="background:var(--purple);box-shadow:0 0 8px var(--purple);"></span>
                       </div>
-                      <p class="text-sm font-bold text-indigo-700">🤖 AI 老师正在研读你的答案，精准批改中...</p>
-                      <p class="text-xs text-slate-500 mt-1">对照原文语境、评分标准与参考答案，请稍候</p>
+                      <p class="text-sm font-bold neon-cyan">🤖 AI 老师正在研读你的答案，精准批改中...</p>
+                      <p class="text-xs dim mt-1 font-hud">对照原文语境 · 评分标准 · 参考答案</p>
                     </div>
                   </div>
 
-                  <!-- Error / network notice -->
+                  <!-- Error notice -->
                   <div x-show="state[q.id].error" class="px-5 sm:px-6 pb-4" x-cloak>
-                    <div class="rounded-2xl bg-rose-50 border border-rose-200 px-4 py-3 flex items-start gap-2.5">
-                      <i data-lucide="triangle-alert" class="w-4 h-4 text-rose-500 mt-0.5 shrink-0"></i>
+                    <div class="rounded-xl chamfer px-4 py-3 flex items-start gap-2.5 border" style="background:rgba(255,62,120,0.08);border-color:rgba(255,62,120,0.4);">
+                      <i data-lucide="triangle-alert" class="w-4 h-4 mt-0.5 shrink-0" style="color:#ff6b8f;"></i>
                       <div class="min-w-0">
-                        <p class="text-sm font-semibold text-rose-700" x-text="state[q.id].error"></p>
-                        <p class="text-xs text-rose-500 mt-0.5">已自动切换到「人工自评模式」，请对照下方参考答案与评分要点。</p>
+                        <p class="text-sm font-semibold" style="color:#ff9db4;" x-text="state[q.id].error"></p>
+                        <p class="text-xs dim mt-0.5">已自动切换到「人工自评模式」，请对照下方参考答案与评分要点。</p>
                       </div>
                     </div>
                   </div>
 
                   <!-- ===== AI RESULT CARD ===== -->
                   <div x-show="state[q.id].ai" class="px-5 sm:px-6 pb-5 animate-float-up" x-cloak>
-                    <div class="rounded-2xl overflow-hidden border border-indigo-100 shadow-sm">
-                      <div class="px-5 py-3.5 bg-gradient-to-r from-indigo-600 to-emerald-600 text-white flex items-center justify-between">
+                    <div class="rounded-xl overflow-hidden border border-[color:var(--line-bright)]" style="box-shadow:0 0 26px -8px rgba(34,224,255,0.4);">
+                      <div class="px-5 py-3.5 flex items-center justify-between" style="background:linear-gradient(90deg,#0e7c9b,#b16bff,#b322a0);">
                         <div class="flex items-center gap-2">
-                          <i data-lucide="bot" class="w-4.5 h-4.5"></i>
-                          <span class="font-bold text-sm">AI 老师批改反馈</span>
+                          <i data-lucide="bot" class="w-4 h-4 text-white"></i>
+                          <span class="font-bold text-sm text-white font-hud">AI 老师批改反馈</span>
                         </div>
-                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 font-black text-sm">
+                        <div class="flex items-center gap-1.5 px-3 py-1 rounded-full font-black text-sm font-disp text-white" style="background:rgba(0,0,0,0.25);box-shadow:0 0 12px rgba(255,255,255,0.2);">
                           <i data-lucide="award" class="w-4 h-4"></i>
                           <span x-text="(state[q.id].ai?.score ?? '—') + ' / ' + q.marks + ' 分'"></span>
                         </div>
                       </div>
-                      <div class="bg-gradient-to-br from-slate-50 to-white p-5 space-y-4">
-                        <!-- Strengths -->
+                      <div class="p-5 space-y-4" style="background:rgba(8,11,26,0.85);">
                         <div>
                           <div class="flex items-center gap-1.5 mb-1.5">
-                            <i data-lucide="circle-check-big" class="w-4 h-4 text-emerald-600"></i>
-                            <span class="text-sm font-bold text-emerald-700">优点 · 你答对了</span>
+                            <i data-lucide="circle-check-big" class="w-4 h-4 neon-lime"></i>
+                            <span class="text-sm font-bold neon-lime font-hud">优点 · 你答对了</span>
                           </div>
-                          <p class="font-serif text-[15px] leading-loose text-slate-700 pl-6" x-text="state[q.id].ai?.strengths"></p>
+                          <p class="font-serif text-[15px] leading-loose pl-6" style="color:#d7e0ff;" x-text="state[q.id].ai?.strengths"></p>
                         </div>
-                        <!-- Missing -->
                         <div>
                           <div class="flex items-center gap-1.5 mb-1.5">
-                            <i data-lucide="circle-alert" class="w-4 h-4 text-amber-600"></i>
-                            <span class="text-sm font-bold text-amber-700">失分点与建议</span>
+                            <i data-lucide="circle-alert" class="w-4 h-4 neon-amber"></i>
+                            <span class="text-sm font-bold neon-amber font-hud">失分点与建议</span>
                           </div>
-                          <p class="font-serif text-[15px] leading-loose text-slate-700 pl-6" x-text="state[q.id].ai?.missing"></p>
+                          <p class="font-serif text-[15px] leading-loose pl-6" style="color:#d7e0ff;" x-text="state[q.id].ai?.missing"></p>
                         </div>
-                        <!-- Improved answer -->
                         <div>
                           <div class="flex items-center gap-1.5 mb-1.5">
-                            <i data-lucide="pen-line" class="w-4 h-4 text-indigo-600"></i>
-                            <span class="text-sm font-bold text-indigo-700">修改建议范文</span>
+                            <i data-lucide="pen-line" class="w-4 h-4 neon-purple"></i>
+                            <span class="text-sm font-bold neon-purple font-hud">修改建议范文</span>
                           </div>
-                          <div class="rounded-xl bg-indigo-50/70 border border-indigo-100 px-4 py-3 ml-6">
-                            <p class="font-serif text-[15px] leading-loose text-slate-800" x-text="state[q.id].ai?.improved"></p>
+                          <div class="rounded-lg chamfer px-4 py-3 ml-6 border border-[color:var(--line)]" style="background:rgba(177,107,255,0.08);">
+                            <p class="font-serif text-[15px] leading-loose" style="color:#e6ecff;" x-text="state[q.id].ai?.improved"></p>
                           </div>
                         </div>
                         <template x-if="state[q.id].ai?.encourage">
-                          <p class="text-[13px] text-slate-500 italic pl-6 flex items-start gap-1.5">
-                            <i data-lucide="heart" class="w-3.5 h-3.5 text-rose-400 mt-0.5 shrink-0"></i>
+                          <p class="text-[13px] italic dim pl-6 flex items-start gap-1.5">
+                            <i data-lucide="heart" class="w-3.5 h-3.5 neon-pink mt-0.5 shrink-0"></i>
                             <span x-text="state[q.id].ai?.encourage"></span>
                           </p>
                         </template>
@@ -433,40 +559,33 @@
                     </div>
                   </div>
 
-                  <!-- ===== MODEL ANSWER + SELF-CHECK (fallback / manual) ===== -->
+                  <!-- ===== MODEL ANSWER + SELF-CHECK ===== -->
                   <div x-show="state[q.id].showModel || state[q.id].showSelfCheck" class="px-5 sm:px-6 pb-5 animate-float-up" x-cloak>
-                    <div class="rounded-2xl border border-slate-200 overflow-hidden">
-                      <div class="px-5 py-3 bg-slate-100 flex items-center gap-2">
-                        <i data-lucide="clipboard-check" class="w-4 h-4 text-slate-600"></i>
-                        <span class="font-bold text-sm text-slate-700">参考答案 · 人工自评清单</span>
+                    <div class="rounded-xl overflow-hidden border border-[color:var(--line)]">
+                      <div class="px-5 py-3 flex items-center gap-2" style="background:rgba(120,150,255,0.08);">
+                        <i data-lucide="clipboard-check" class="w-4 h-4 neon-cyan"></i>
+                        <span class="font-bold text-sm font-hud" style="color:#c7d2ff;">参考答案 · 人工自评清单</span>
                       </div>
-                      <div class="p-5 space-y-4 bg-white">
-                        <!-- Model answer -->
+                      <div class="p-5 space-y-4" style="background:rgba(8,11,26,0.8);">
                         <div>
-                          <span class="text-xs font-bold text-emerald-700 uppercase tracking-wide">参考答案</span>
-                          <div class="rounded-xl bg-emerald-50/60 border border-emerald-100 px-4 py-3 mt-1.5">
-                            <p class="font-serif text-[15px] leading-loose text-slate-800" x-text="q.model"></p>
+                          <span class="text-[11px] font-bold font-hud neon-lime uppercase tracking-wide">参考答案 // MODEL</span>
+                          <div class="rounded-lg chamfer px-4 py-3 mt-1.5 border border-[color:var(--line)]" style="background:rgba(157,255,91,0.06);">
+                            <p class="font-serif text-[15px] leading-loose" style="color:#e6ecff;" x-text="q.model"></p>
                           </div>
                         </div>
-                        <!-- Criteria -->
                         <div>
-                          <span class="text-xs font-bold text-slate-500 uppercase tracking-wide">评分要点 · 逐条勾选（<span x-text="q.marks"></span> 分）</span>
+                          <span class="text-[11px] font-bold font-hud dim uppercase tracking-wide">评分要点 · 逐条勾选（<span x-text="q.marks"></span> 分）</span>
                           <div class="mt-2 space-y-2">
                             <template x-for="(c, cIdx) in q.criteria" :key="cIdx">
-                              <label class="flex items-start gap-3 p-3 rounded-xl border border-slate-150 bg-slate-50/50 hover:bg-slate-50 cursor-pointer transition-colors">
-                                <input
-                                  type="checkbox"
-                                  x-model="state[q.id].checks[cIdx]"
-                                  class="mt-0.5 w-5 h-5 rounded-md border-slate-300 text-emerald-600 focus:ring-emerald-400 cursor-pointer shrink-0"
-                                />
-                                <span class="font-serif text-[14px] leading-relaxed text-slate-700" x-text="c"></span>
+                              <label class="flex items-start gap-3 p-3 rounded-lg border border-[color:var(--line)] cursor-pointer transition-colors" style="background:rgba(120,150,255,0.04);" onmouseover="this.style.background='rgba(34,224,255,0.07)'" onmouseout="this.style.background='rgba(120,150,255,0.04)'">
+                                <input type="checkbox" x-model="state[q.id].checks[cIdx]" class="neon-check mt-0.5 w-5 h-5 rounded cursor-pointer shrink-0" />
+                                <span class="font-serif text-[14px] leading-relaxed" style="color:#d3ddff;" x-text="c"></span>
                               </label>
                             </template>
                           </div>
-                          <!-- Self score -->
-                          <div class="mt-3 flex items-center justify-between px-4 py-3 rounded-xl bg-indigo-50 border border-indigo-100">
-                            <span class="text-sm font-semibold text-indigo-700">自评得分</span>
-                            <span class="text-lg font-black text-indigo-700">
+                          <div class="mt-3 flex items-center justify-between px-4 py-3 rounded-lg chamfer border border-[color:var(--line-bright)]" style="background:rgba(34,224,255,0.06);">
+                            <span class="text-sm font-semibold font-hud" style="color:#c7d2ff;">自评得分</span>
+                            <span class="text-lg font-black font-disp neon-cyan">
                               <span x-text="selfScore(q)"></span> / <span x-text="q.marks"></span> 分
                             </span>
                           </div>
@@ -484,11 +603,11 @@
     </main>
 
     <!-- ================= FOOTER ================= -->
-    <footer class="border-t border-slate-200 bg-white/60 mt-auto">
-      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
-        <p>中一高华阅读理解·AI智能特训站 · 助力 Sec 1 Higher Chinese 阅读理解精练 · v1.1 · 自动更新已开启 ✅</p>
+    <footer class="border-t border-[color:var(--line)] mt-auto" style="background:rgba(5,7,16,0.6);">
+      <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs dim">
+        <p class="font-hud">中一高华阅读理解·AI智能特训站 // SEC 1 HIGHER CHINESE READING TERMINAL</p>
         <p class="flex items-center gap-1.5">
-          <i data-lucide="shield-check" class="w-3.5 h-3.5"></i>
+          <i data-lucide="shield-check" class="w-3.5 h-3.5 neon-lime"></i>
           API 密钥仅保存在你的浏览器 localStorage，不会上传服务器
         </p>
       </div>
@@ -501,42 +620,35 @@
       @keydown.escape.window="showSettings = false"
       class="fixed inset-0 z-50 flex items-center justify-center p-4"
     >
-      <div
-        x-show="showSettings"
-        x-transition.opacity
-        @click="showSettings = false"
-        class="absolute inset-0 bg-slate-900/50 backdrop-blur-sm"
-      ></div>
+      <div x-show="showSettings" x-transition.opacity @click="showSettings = false" class="absolute inset-0" style="background:rgba(2,4,10,0.72);backdrop-filter:blur(6px);"></div>
 
       <div
         x-show="showSettings"
         x-transition:enter="transition ease-out duration-300"
         x-transition:enter-start="opacity-0 translate-y-6 scale-95"
         x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-        class="relative w-full max-w-md rounded-3xl bg-white shadow-2xl border border-slate-200 overflow-hidden"
+        class="panel panel-pink hud chamfer relative w-full max-w-md overflow-hidden"
       >
-        <!-- header -->
-        <div class="px-6 py-5 bg-gradient-to-r from-indigo-600 to-emerald-600 text-white">
+        <div class="px-6 py-5 text-white" style="background:linear-gradient(90deg,#0e7c9b,#b16bff,#b322a0);">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5">
-              <div class="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-                <i data-lucide="key-round" class="w-4.5 h-4.5"></i>
+              <div class="w-9 h-9 rounded-lg chamfer flex items-center justify-center" style="background:rgba(0,0,0,0.25);">
+                <i data-lucide="key-round" class="w-4 h-4"></i>
               </div>
               <div>
-                <h3 class="font-black text-base">API 密钥设置</h3>
-                <p class="text-[11px] text-indigo-100">连接 Claude，开启实时智能批改</p>
+                <h3 class="font-black text-base font-disp">API 密钥设置</h3>
+                <p class="text-[11px] font-hud" style="color:rgba(255,255,255,0.8);">连接 Claude，开启实时智能批改</p>
               </div>
             </div>
             <button @click="showSettings = false" class="w-8 h-8 rounded-lg hover:bg-white/20 flex items-center justify-center transition-colors">
-              <i data-lucide="x" class="w-4.5 h-4.5"></i>
+              <i data-lucide="x" class="w-4 h-4"></i>
             </button>
           </div>
         </div>
 
-        <!-- body -->
-        <div class="px-6 py-5 space-y-4">
+        <div class="px-6 py-5 space-y-4" style="background:rgba(8,11,26,0.9);">
           <div>
-            <label class="text-sm font-semibold text-slate-700 mb-1.5 block">Anthropic API Key</label>
+            <label class="text-sm font-semibold mb-1.5 block" style="color:#dbe3ff;">Anthropic API Key</label>
             <div class="relative">
               <input
                 :type="showKeyText ? 'text' : 'password'"
@@ -544,55 +656,33 @@
                 placeholder="sk-ant-api03-..."
                 autocomplete="off"
                 spellcheck="false"
-                class="w-full rounded-xl border border-slate-200 bg-slate-50 pl-4 pr-11 py-3 text-sm font-mono text-slate-800 focus:bg-white focus:border-emerald-400 focus:ring-4 focus:ring-emerald-100 outline-none transition"
+                class="field w-full rounded-lg pl-4 pr-11 py-3 text-sm font-mono"
               />
-              <button
-                @click="showKeyText = !showKeyText"
-                type="button"
-                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <i :data-lucide="showKeyText ? 'eye-off' : 'eye'" class="w-4.5 h-4.5"></i>
+              <button @click="showKeyText = !showKeyText" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 dim hover:text-white">
+                <i :data-lucide="showKeyText ? 'eye-off' : 'eye'" class="w-4 h-4"></i>
               </button>
             </div>
-            <p class="text-[11px] text-slate-400 mt-2 flex items-start gap-1.5">
-              <i data-lucide="info" class="w-3.5 h-3.5 mt-0.5 shrink-0"></i>
+            <p class="text-[11px] dim mt-2 flex items-start gap-1.5">
+              <i data-lucide="info" class="w-3.5 h-3.5 mt-0.5 shrink-0 neon-cyan"></i>
               密钥仅存于本机浏览器（localStorage），直接从浏览器请求 Claude API，不经过任何第三方服务器。
             </p>
           </div>
 
-          <!-- status preview -->
           <div
-            class="flex items-center gap-2 px-3.5 py-2.5 rounded-xl text-sm font-semibold border"
-            :class="keyInput.trim()
-              ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
-              : 'bg-amber-50 text-amber-700 border-amber-200'"
+            class="flex items-center gap-2 px-3.5 py-2.5 rounded-lg text-sm font-semibold border"
+            :class="keyInput.trim() ? 'neon-lime' : 'neon-amber'"
+            :style="keyInput.trim() ? 'background:rgba(157,255,91,0.07);border-color:var(--lime)' : 'background:rgba(255,207,74,0.07);border-color:var(--amber)'"
           >
             <i :data-lucide="keyInput.trim() ? 'circle-check-big' : 'circle-alert'" class="w-4 h-4"></i>
             <span x-text="keyInput.trim() ? '🟢 已就绪：提交后将由 AI 老师自动批改' : '🟡 未输入：将使用人工自评模式（参考答案 + 自评清单）'"></span>
           </div>
         </div>
 
-        <!-- footer -->
-        <div class="px-6 py-4 bg-slate-50 border-t border-slate-100 flex items-center justify-between gap-3">
-          <button
-            @click="clearKey()"
-            class="text-sm font-medium text-slate-400 hover:text-rose-500 transition-colors"
-          >
-            清除密钥
-          </button>
+        <div class="px-6 py-4 border-t border-[color:var(--line)] flex items-center justify-between gap-3" style="background:rgba(6,9,20,0.9);">
+          <button @click="clearKey()" class="text-sm font-medium dim hover:text-[color:var(--pink)] transition-colors">清除密钥</button>
           <div class="flex items-center gap-2">
-            <button
-              @click="showSettings = false"
-              class="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
-            >
-              取消
-            </button>
-            <button
-              @click="saveKey()"
-              class="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-gradient-to-r from-emerald-600 to-emerald-500 hover:shadow-lg transition-all"
-            >
-              保存密钥
-            </button>
+            <button @click="showSettings = false" class="btn btn-ghost px-4 py-2.5 rounded-lg text-sm font-semibold">取消</button>
+            <button @click="saveKey()" class="btn btn-cyan chamfer px-5 py-2.5 rounded-lg text-sm font-bold">保存密钥</button>
           </div>
         </div>
       </div>
@@ -603,10 +693,11 @@
       x-show="toast"
       x-cloak
       x-transition
-      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-2xl bg-slate-900 text-white text-sm font-semibold shadow-2xl flex items-center gap-2"
+      class="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 px-5 py-3 rounded-xl chamfer text-sm font-semibold flex items-center gap-2 panel hud"
+      style="background:rgba(8,11,26,0.95);box-shadow:0 0 26px -6px rgba(34,224,255,0.5);"
     >
-      <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400"></i>
-      <span x-text="toast"></span>
+      <i data-lucide="check-circle-2" class="w-4 h-4 neon-lime"></i>
+      <span x-text="toast" style="color:#e6ecff;"></span>
     </div>
   </div>
 
