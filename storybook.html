@@ -1,0 +1,1094 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-SG">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#0A0D14" />
+  <title>量子书阁 · QUANTUM CODEX｜3D 华文数字故事馆</title>
+  <meta name="description" content="为新加坡中一学生打造的未来感 3D 全息华文故事馆：汉语拼音、词汇释义、朗读功能。" />
+
+  <!-- Tailwind (CDN, matches project convention) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Icons -->
+  <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&family=Noto+Serif+SC:wght@400;500;600;700;900&family=Noto+Sans+SC:wght@400;500;700&display=swap" rel="stylesheet" />
+
+  <script>
+    if (window.tailwind) tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '"Noto Sans SC"', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            hud: ['"Space Grotesk"', 'Inter', 'ui-sans-serif', 'sans-serif'],
+            serif: ['"Noto Serif SC"', 'ui-serif', 'Georgia', 'serif'],
+          },
+          colors: {
+            pitch: '#0A0D14',
+            void: '#121824',
+            cyan: '#00F0FF',
+            quantum: '#7000FF',
+            amber: '#FFB800',
+            crisp: '#F8FAFC',
+            metal: '#94A3B8',
+          },
+        },
+      },
+    };
+  </script>
+
+  <!-- Three.js via importmap (ES modules) -->
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "https://unpkg.com/three@0.161.0/build/three.module.js",
+      "three/addons/": "https://unpkg.com/three@0.161.0/examples/jsm/"
+    }
+  }
+  </script>
+
+  <style>
+    :root { color-scheme: dark; }
+    * { -webkit-tap-highlight-color: transparent; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      background: #0A0D14;
+      color: #F8FAFC;
+      -webkit-font-smoothing: antialiased;
+      overflow: hidden;
+      font-family: 'Inter', 'Noto Sans SC', sans-serif;
+    }
+
+    /* ---------- Ambient background ---------- */
+    #bg-webgl { position: fixed; inset: 0; z-index: 0; }
+    .env-grid {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background-image:
+        linear-gradient(rgba(0,240,255,0.035) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0,240,255,0.035) 1px, transparent 1px);
+      background-size: 46px 46px;
+      mask-image: radial-gradient(ellipse 80% 70% at 50% 55%, #000 30%, transparent 85%);
+      -webkit-mask-image: radial-gradient(ellipse 80% 70% at 50% 55%, #000 30%, transparent 85%);
+    }
+    .env-vignette {
+      position: fixed; inset: 0; z-index: 1; pointer-events: none;
+      background: radial-gradient(ellipse 120% 90% at 50% 40%, transparent 40%, rgba(10,13,20,0.7) 100%);
+    }
+    .scanlines::before {
+      content: ''; position: absolute; inset: 0; pointer-events: none; border-radius: inherit;
+      background: repeating-linear-gradient(180deg, rgba(255,255,255,0.02) 0 1px, transparent 1px 3px);
+      opacity: 0.5;
+    }
+
+    /* ---------- Glass / HUD ---------- */
+    .glass {
+      background: linear-gradient(160deg, rgba(18,24,36,0.72), rgba(10,13,20,0.6));
+      backdrop-filter: blur(18px) saturate(150%);
+      -webkit-backdrop-filter: blur(18px) saturate(150%);
+      border: 1px solid rgba(148,163,184,0.14);
+      border-radius: 18px;
+    }
+    .glow-border { position: relative; }
+    .glow-border::before {
+      content: ''; position: absolute; inset: 0; border-radius: inherit; padding: 1px;
+      background: linear-gradient(135deg, rgba(0,240,255,0.55), rgba(112,0,255,0.28) 45%, transparent 70%);
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+      pointer-events: none;
+    }
+    /* HUD corner brackets */
+    .hud-corners { position: relative; }
+    .hud-corners::before, .hud-corners::after {
+      content: ''; position: absolute; width: 16px; height: 16px; pointer-events: none;
+      border-color: rgba(0,240,255,0.7); border-style: solid; border-width: 0;
+    }
+    .hud-corners::before { top: 8px; left: 8px; border-top-width: 2px; border-left-width: 2px; border-top-left-radius: 6px; }
+    .hud-corners::after { bottom: 8px; right: 8px; border-bottom-width: 2px; border-right-width: 2px; border-bottom-right-radius: 6px; }
+
+    .neon-text { text-shadow: 0 0 18px rgba(0,240,255,0.45); }
+    .amber-glow { box-shadow: 0 0 22px rgba(255,184,0,0.28); }
+    .cyan-glow { box-shadow: 0 0 26px rgba(0,240,255,0.32); }
+
+    /* ---------- Typography helpers ---------- */
+    .tracking-mega { letter-spacing: 0.42em; }
+    .tracking-hud { letter-spacing: 0.22em; }
+
+    /* ---------- Screens ---------- */
+    .screen { position: fixed; inset: 0; z-index: 5; }
+    #reader { z-index: 6; }
+
+    /* Story cards */
+    .story-card { transition: transform .5s cubic-bezier(.19,1,.22,1), box-shadow .5s; will-change: transform; }
+    .story-card:hover { transform: translateY(-8px) scale(1.015); }
+    .card-sheen { background: linear-gradient(115deg, transparent 40%, rgba(0,240,255,0.09) 50%, transparent 60%); }
+
+    /* ---------- Reading pane ---------- */
+    .reading {
+      font-family: 'Noto Serif SC', serif;
+      font-weight: 500;
+      line-height: 2.7;
+      /* --fs (font scale) kept off `transform` so the page-flip animation,
+         which animates `transform`, can't clobber the chosen reading size. */
+      font-size: calc(clamp(1.35rem, 2.3vw + 0.9rem, 2.15rem) * var(--fs, 1));
+      color: #F8FAFC;
+      letter-spacing: 0.01em;
+      transition: font-size .3s ease;
+    }
+    .reading ruby { ruby-align: center; margin: 0 0.02em; }
+    .reading rt {
+      font-family: 'Space Grotesk', 'Inter', sans-serif;
+      font-weight: 500;
+      color: #00F0FF;
+      font-size: 0; opacity: 0;
+      transform: translateY(3px);
+      transition: opacity .35s ease, font-size .35s ease, transform .35s ease;
+      text-shadow: 0 0 12px rgba(0,240,255,0.35);
+      letter-spacing: 0;
+    }
+    .reading.pinyin-on rt { font-size: 0.44em; opacity: 1; transform: translateY(0); }
+    .reading .punc { color: #cbd5e1; }
+    .reading .vocab {
+      cursor: pointer; position: relative;
+      color: #FFE9A8;
+      border-bottom: 1.5px dashed rgba(255,184,0,0.7);
+      border-radius: 3px;
+      transition: color .25s, background .25s, box-shadow .25s;
+    }
+    .reading .vocab:hover, .reading .vocab.active {
+      color: #FFB800; background: rgba(255,184,0,0.08);
+      box-shadow: 0 0 20px rgba(255,184,0,0.22);
+    }
+    .reading .vocab rt { color: #FFB800; text-shadow: 0 0 12px rgba(255,184,0,0.4); }
+
+    /* Page flip transition on the text card */
+    .page-inner { transform-origin: left center; }
+    .flip-next { animation: flipNext .55s cubic-bezier(.36,.66,.3,1) both; }
+    .flip-prev { animation: flipPrev .55s cubic-bezier(.36,.66,.3,1) both; }
+    @keyframes flipNext {
+      0% { opacity: 0; transform: perspective(1400px) rotateY(28deg) translateX(24px); filter: blur(4px); }
+      100% { opacity: 1; transform: perspective(1400px) rotateY(0) translateX(0); filter: blur(0); }
+    }
+    @keyframes flipPrev {
+      0% { opacity: 0; transform: perspective(1400px) rotateY(-28deg) translateX(-24px); filter: blur(4px); }
+      100% { opacity: 1; transform: perspective(1400px) rotateY(0) translateX(0); filter: blur(0); }
+    }
+
+    /* Vocab popover */
+    #vocab-pop { transition: opacity .22s ease, transform .22s ease; }
+    #vocab-pop.hidden-pop { opacity: 0; transform: translateY(6px) scale(.98); pointer-events: none; }
+
+    /* Buttons */
+    .hud-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 0.5rem;
+      border-radius: 12px; border: 1px solid rgba(148,163,184,0.2);
+      background: rgba(18,24,36,0.6); color: #F8FAFC;
+      transition: all .25s ease; cursor: pointer;
+    }
+    .hud-btn:hover { border-color: rgba(0,240,255,0.5); color: #00F0FF; box-shadow: 0 0 20px rgba(0,240,255,0.18); }
+    .hud-btn:active { transform: scale(.96); }
+    .hud-btn:disabled { opacity: 0.35; cursor: not-allowed; box-shadow: none; }
+    .hud-btn.on { border-color: rgba(0,240,255,0.7); color: #00F0FF; background: rgba(0,240,255,0.08); box-shadow: 0 0 22px rgba(0,240,255,0.25); }
+
+    /* Progress dots */
+    .pdot { transition: all .3s ease; }
+
+    /* Loader */
+    #loader { position: fixed; inset: 0; z-index: 50; background: #0A0D14; display: flex; align-items: center; justify-content: center; transition: opacity .8s ease; }
+    .loader-ring { width: 74px; height: 74px; border-radius: 50%; border: 2px solid rgba(0,240,255,0.15); border-top-color: #00F0FF; animation: spin 1s linear infinite; box-shadow: 0 0 30px rgba(0,240,255,0.3); }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    @keyframes floaty { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-8px); } }
+    .floaty { animation: floaty 6s ease-in-out infinite; }
+    @keyframes pulseSoft { 0%,100% { opacity: .55; } 50% { opacity: 1; } }
+    .pulse-soft { animation: pulseSoft 2.4s ease-in-out infinite; }
+
+    .fade-in { animation: fadeIn .6s ease both; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-thumb { background: rgba(0,240,255,0.25); border-radius: 999px; }
+    ::selection { background: rgba(0,240,255,0.25); color: #fff; }
+
+    /* Full-element toggle used by JS for screens/loader. Uses !important so it
+       overrides #id display rules. Kept SEPARATE from Tailwind's `hidden` so the
+       responsive display utilities (e.g. hidden sm:inline-flex) still work. */
+    .is-hidden { display: none !important; }
+    @media (max-width: 640px) {
+      .reading { line-height: 2.5; }
+    }
+  </style>
+</head>
+<body>
+  <!-- 3D backdrop -->
+  <canvas id="bg-webgl"></canvas>
+  <div class="env-grid"></div>
+  <div class="env-vignette"></div>
+
+  <!-- ============ LOADER ============ -->
+  <div id="loader">
+    <div class="text-center">
+      <div class="loader-ring mx-auto"></div>
+      <p class="mt-6 font-hud text-cyan tracking-hud text-sm pulse-soft">正在初始化量子书阁</p>
+      <p class="mt-1 font-hud text-metal/60 tracking-mega text-[10px]">INITIALIZING&nbsp;QUANTUM&nbsp;CODEX</p>
+    </div>
+  </div>
+
+  <!-- ============ TOP HUD BAR ============ -->
+  <header class="fixed top-0 inset-x-0 z-20 px-4 sm:px-8 py-3 flex items-center justify-between pointer-events-none">
+    <div class="flex items-center gap-3 pointer-events-auto">
+      <div class="w-9 h-9 rounded-xl glass glow-border grid place-items-center cyan-glow">
+        <i data-lucide="book-open-text" class="w-4 h-4 text-cyan"></i>
+      </div>
+      <div class="leading-tight">
+        <div class="font-hud tracking-hud text-[13px] text-crisp neon-text">量子书阁</div>
+        <div class="font-hud tracking-mega text-[8px] text-metal/70">QUANTUM · CODEX</div>
+      </div>
+    </div>
+    <div class="hidden sm:flex items-center gap-2 pointer-events-auto">
+      <span class="font-hud text-[10px] tracking-hud text-metal/70 px-3 py-1.5 rounded-lg glass">中一 · SEC 1</span>
+      <span class="font-hud text-[10px] tracking-hud text-cyan/90 px-3 py-1.5 rounded-lg glass glow-border flex items-center gap-1.5">
+        <span class="w-1.5 h-1.5 rounded-full bg-cyan pulse-soft"></span> 系统在线
+      </span>
+    </div>
+  </header>
+
+  <!-- ============ LIBRARY SCREEN ============ -->
+  <section id="library" class="screen overflow-y-auto">
+    <div class="min-h-full flex flex-col px-4 sm:px-8 pt-24 pb-16">
+      <!-- Hero -->
+      <div class="max-w-5xl mx-auto text-center mb-10 fade-in">
+        <div class="inline-flex items-center gap-2 px-4 py-1.5 rounded-full glass glow-border mb-6">
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-amber"></i>
+          <span class="font-hud text-[10px] tracking-hud text-metal">全息华文数字故事馆 · HOLOGRAPHIC READER</span>
+        </div>
+        <h1 class="font-serif font-black text-4xl sm:text-6xl text-crisp neon-text leading-tight">
+          走进故事的<span class="text-cyan">未来</span>
+        </h1>
+        <p class="mt-4 text-metal max-w-xl mx-auto text-sm sm:text-base leading-relaxed">
+          为新加坡中一学生打造的沉浸式阅读舱。点亮拼音、轻触词语查释义、按下按钮聆听标准华语朗读。
+        </p>
+      </div>
+
+      <!-- Story grid -->
+      <div id="story-grid" class="max-w-6xl mx-auto w-full grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5"></div>
+
+      <div class="mt-12 text-center">
+        <p class="font-hud text-[10px] tracking-hud text-metal/50">SELECT&nbsp;A&nbsp;CODEX&nbsp;TO&nbsp;BEGIN&nbsp;·&nbsp;选择一本故事开始阅读</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ READER SCREEN ============ -->
+  <section id="reader" class="screen is-hidden">
+    <div class="relative h-full flex flex-col">
+
+      <!-- Reader top bar -->
+      <div class="flex items-center justify-between px-4 sm:px-8 pt-20 pb-2 gap-3">
+        <button id="btn-back" class="hud-btn px-3.5 py-2 text-xs font-hud tracking-hud">
+          <i data-lucide="chevron-left" class="w-4 h-4"></i> 书架
+        </button>
+        <div class="text-center flex-1 min-w-0">
+          <h2 id="reader-title" class="font-serif font-bold text-lg sm:text-2xl text-crisp truncate neon-text"></h2>
+          <p id="reader-sub" class="font-hud text-[10px] tracking-hud text-metal/70 truncate"></p>
+        </div>
+        <div class="w-[72px] sm:w-[92px] text-right font-hud text-[11px] text-metal">
+          <span id="page-count" class="text-cyan">01</span>/<span id="page-total">01</span>
+        </div>
+      </div>
+
+      <!-- Reading stage -->
+      <div class="flex-1 flex items-center justify-center px-4 sm:px-8 pb-40 min-h-0">
+        <div class="relative w-full max-w-3xl">
+          <!-- Reading glass panel -->
+          <div class="glass glow-border hud-corners scanlines rounded-3xl px-6 sm:px-12 py-8 sm:py-12 cyan-glow relative overflow-hidden">
+            <div class="absolute -top-px left-1/2 -translate-x-1/2 w-40 h-[2px] bg-gradient-to-r from-transparent via-cyan to-transparent"></div>
+            <div id="page-stage" class="min-h-[42vh] flex items-center justify-center">
+              <div id="page-inner" class="page-inner reading pinyin-on text-center w-full"></div>
+            </div>
+          </div>
+          <!-- floating page nav arrows -->
+          <button id="btn-prev" class="hidden sm:grid place-items-center absolute -left-16 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass glow-border hud-btn">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+          </button>
+          <button id="btn-next" class="hidden sm:grid place-items-center absolute -right-16 top-1/2 -translate-y-1/2 w-12 h-12 rounded-full glass glow-border hud-btn">
+            <i data-lucide="arrow-right" class="w-5 h-5"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- ============ CONTROL DOCK ============ -->
+      <div class="fixed bottom-0 inset-x-0 z-20 px-4 sm:px-8 pb-5">
+        <div class="max-w-3xl mx-auto glass glow-border rounded-2xl px-3 sm:px-5 py-3 flex items-center gap-2 sm:gap-3">
+          <!-- prev (mobile) -->
+          <button id="btn-prev-m" class="hud-btn sm:hidden w-11 h-11 shrink-0"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
+
+          <!-- Pinyin toggle -->
+          <button id="btn-pinyin" class="hud-btn on px-3 py-2.5 text-xs font-hud tracking-hud shrink-0">
+            <i data-lucide="languages" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">拼音</span>
+          </button>
+
+          <!-- TTS -->
+          <button id="btn-tts" class="hud-btn px-3 py-2.5 text-xs font-hud tracking-hud shrink-0">
+            <i data-lucide="volume-2" class="w-4 h-4"></i>
+            <span class="hidden sm:inline">朗读</span>
+          </button>
+
+          <!-- Font size -->
+          <button id="btn-font" class="hud-btn px-3 py-2.5 text-xs font-hud tracking-hud shrink-0">
+            <i data-lucide="type" class="w-4 h-4"></i>
+            <span id="font-label" class="hidden sm:inline">标准</span>
+          </button>
+
+          <!-- Progress bar (fills space) -->
+          <div class="flex-1 min-w-0 hidden sm:flex items-center gap-3 px-2">
+            <div class="flex-1 h-1.5 rounded-full bg-white/10 overflow-hidden">
+              <div id="progress-fill" class="h-full bg-gradient-to-r from-cyan to-quantum rounded-full transition-all duration-500" style="width:0%"></div>
+            </div>
+          </div>
+
+          <div id="pdots" class="flex items-center gap-1.5 sm:hidden flex-1 justify-center overflow-hidden"></div>
+
+          <!-- next (mobile) -->
+          <button id="btn-next-m" class="hud-btn sm:hidden w-11 h-11 shrink-0"><i data-lucide="arrow-right" class="w-5 h-5"></i></button>
+
+          <!-- next label (desktop) -->
+          <button id="btn-next-d" class="hud-btn hidden sm:inline-flex px-3.5 py-2.5 text-xs font-hud tracking-hud shrink-0">
+            下一页 <i data-lucide="chevron-right" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+
+  <!-- ============ VOCAB POPOVER ============ -->
+  <div id="vocab-pop" class="hidden-pop fixed z-40 w-[290px] max-w-[88vw] glass glow-border hud-corners scanlines rounded-2xl p-5 amber-glow">
+    <button id="vocab-close" class="absolute top-3 right-3 text-metal hover:text-crisp transition"><i data-lucide="x" class="w-4 h-4"></i></button>
+    <div class="flex items-baseline gap-2">
+      <span id="vp-py" class="font-hud text-xs text-amber tracking-hud"></span>
+    </div>
+    <div class="flex items-center gap-2 mt-1">
+      <h3 id="vp-word" class="font-serif font-bold text-2xl text-crisp"></h3>
+      <button id="vp-speak" class="hud-btn w-8 h-8 shrink-0"><i data-lucide="volume-2" class="w-3.5 h-3.5"></i></button>
+    </div>
+    <div class="mt-3 space-y-2.5">
+      <div>
+        <div class="font-hud text-[9px] tracking-hud text-cyan/80 mb-0.5">MOE 释义</div>
+        <p id="vp-def" class="text-sm text-crisp/90 leading-relaxed font-sans"></p>
+      </div>
+      <div>
+        <div class="font-hud text-[9px] tracking-hud text-quantum/90 mb-0.5">ENGLISH</div>
+        <p id="vp-en" class="text-sm text-metal leading-relaxed font-sans"></p>
+      </div>
+      <div class="pt-1 border-t border-white/10">
+        <div class="font-hud text-[9px] tracking-hud text-amber/80 mb-0.5 mt-2">例句 · EXAMPLE</div>
+        <p id="vp-ex" class="text-sm text-crisp/80 leading-relaxed font-serif"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ APP DATA + LOGIC ============ -->
+  <script>
+  /* ================= STORY LIBRARY =================
+     Schema matches the project spec:
+     { id, title, englishTitle, level, estimatedReadTime,
+       pages: [ { pageNumber, text, pinyin, vocabulary:[{word,pinyin,definition,english}] } ] }
+     Extra display fields (category, accent, glyph, example on vocab) added for the UI. */
+  window.STORY_LIBRARY = [
+    {
+      id: "story-shouzhu",
+      title: "守株待兔",
+      englishTitle: "Waiting by the Stump",
+      level: "Secondary 1",
+      estimatedReadTime: "3 mins",
+      category: "成语故事 · Classical Idiom",
+      accent: "cyan",
+      glyph: "🐇",
+      pages: [
+        { pageNumber: 1, text: "从前，宋国有一个农夫。", pinyin: "cóng qián sòng guó yǒu yī gè nóng fū",
+          vocabulary: [] },
+        { pageNumber: 2, text: "他每天在田里辛苦地干活。", pinyin: "tā měi tiān zài tián lǐ xīn kǔ de gàn huó",
+          vocabulary: [ { word:"辛苦", pinyin:"xīn kǔ", definition:"身体或精神很累，付出了很多努力。", english:"hardworking; toilsome", example:"农夫每天辛苦地耕田。" } ] },
+        { pageNumber: 3, text: "有一天，一只兔子撞在树桩上，死了。", pinyin: "yǒu yī tiān yī zhī tù zi zhuàng zài shù zhuāng shàng sǐ le",
+          vocabulary: [ { word:"树桩", pinyin:"shù zhuāng", definition:"树木被砍掉后，留在地上的一段树干。", english:"tree stump", example:"兔子撞在树桩上。" } ] },
+        { pageNumber: 4, text: "农夫捡起兔子，非常高兴。", pinyin: "nóng fū jiǎn qǐ tù zi fēi cháng gāo xìng",
+          vocabulary: [] },
+        { pageNumber: 5, text: "从此，他放下锄头，天天守在树桩旁，希望再捡到兔子。", pinyin: "cóng cǐ tā fàng xià chú tóu tiān tiān shǒu zài shù zhuāng páng xī wàng zài jiǎn dào tù zi",
+          vocabulary: [ { word:"守株待兔", pinyin:"shǒu zhū dài tù", definition:"比喻不主动努力，只想靠运气或侥幸得到成功。", english:"to wait by a stump for a rabbit; to rely on luck instead of effort", example:"他不复习，只想守株待兔，考试当然不及格。" } ] },
+        { pageNumber: 6, text: "可是，兔子再也没有来，农夫成了大家的笑话。", pinyin: "kě shì tù zi zài yě méi yǒu lái nóng fū chéng le dà jiā de xiào huà",
+          vocabulary: [ { word:"笑话", pinyin:"xiào huà", definition:"让人觉得可笑的事；被别人取笑的对象。", english:"a joke; a laughing stock", example:"别做傻事，免得成为大家的笑话。" } ] }
+      ]
+    },
+    {
+      id: "story-change",
+      title: "嫦娥奔月",
+      englishTitle: "Chang'e Flies to the Moon",
+      level: "Secondary 1",
+      estimatedReadTime: "5 mins",
+      category: "民间传说 · Folklore",
+      accent: "quantum",
+      glyph: "🌙",
+      pages: [
+        { pageNumber: 1, text: "很久很久以前，天上有十个太阳。", pinyin: "hěn jiǔ hěn jiǔ yǐ qián tiān shàng yǒu shí gè tài yáng", vocabulary: [] },
+        { pageNumber: 2, text: "大地被晒得又干又热，庄稼都枯死了。", pinyin: "dà dì bèi shài de yòu gān yòu rè zhuāng jia dōu kū sǐ le",
+          vocabulary: [ { word:"枯死", pinyin:"kū sǐ", definition:"植物因为缺水而干枯、死亡。", english:"to wither and die", example:"天气太热，庄稼都枯死了。" } ] },
+        { pageNumber: 3, text: "英雄后羿射下九个太阳，救了百姓。", pinyin: "yīng xióng hòu yì shè xià jiǔ gè tài yáng jiù le bǎi xìng",
+          vocabulary: [ { word:"英雄", pinyin:"yīng xióng", definition:"勇敢无畏、为大家做出贡献的人。", english:"hero", example:"后羿是射日救民的英雄。" } ] },
+        { pageNumber: 4, text: "王母娘娘送给后羿一颗神奇的仙丹。", pinyin: "wáng mǔ niáng niáng sòng gěi hòu yì yī kē shén qí de xiān dān",
+          vocabulary: [ { word:"仙丹", pinyin:"xiān dān", definition:"神话中能让人长生不老的神奇药丸。", english:"elixir of immortality", example:"嫦娥吞下了这颗仙丹。" } ] },
+        { pageNumber: 5, text: "后羿的妻子嫦娥，美丽又善良。", pinyin: "hòu yì de qī zi cháng é měi lì yòu shàn liáng",
+          vocabulary: [ { word:"善良", pinyin:"shàn liáng", definition:"心地好，待人和气、宽厚。", english:"kind-hearted", example:"嫦娥是个善良的人。" } ] },
+        { pageNumber: 6, text: "为了不让坏人抢走仙丹，嫦娥把它吞了下去。", pinyin: "wèi le bù ràng huài rén qiǎng zǒu xiān dān cháng é bǎ tā tūn le xià qù", vocabulary: [] },
+        { pageNumber: 7, text: "忽然，她的身体轻轻飘了起来，飞向月亮。", pinyin: "hū rán tā de shēn tǐ qīng qīng piāo le qǐ lái fēi xiàng yuè liàng", vocabulary: [] },
+        { pageNumber: 8, text: "从此，嫦娥住在月宫里，每年中秋节和人们相望。", pinyin: "cóng cǐ cháng é zhù zài yuè gōng lǐ měi nián zhōng qiū jié hé rén men xiāng wàng",
+          vocabulary: [ { word:"中秋节", pinyin:"zhōng qiū jié", definition:"农历八月十五的传统节日，人们赏月、吃月饼、团圆。", english:"Mid-Autumn Festival", example:"中秋节我们一家人一起赏月。" } ] }
+      ]
+    },
+    {
+      id: "story-hongdian",
+      title: "狮城的小红点",
+      englishTitle: "The Little Red Dot",
+      level: "Secondary 1",
+      estimatedReadTime: "5 mins",
+      category: "新加坡故事 · Modern SG",
+      accent: "amber",
+      glyph: "🦁",
+      pages: [
+        { pageNumber: 1, text: "小明是新加坡的一名中学生。", pinyin: "xiǎo míng shì xīn jiā pō de yī míng zhōng xué shēng", vocabulary: [] },
+        { pageNumber: 2, text: "有一次上地理课，他看见世界地图。", pinyin: "yǒu yī cì shàng dì lǐ kè tā kàn jiàn shì jiè dì tú", vocabulary: [] },
+        { pageNumber: 3, text: "新加坡小得像一个红色的小点。", pinyin: "xīn jiā pō xiǎo de xiàng yī gè hóng sè de xiǎo diǎn", vocabulary: [] },
+        { pageNumber: 4, text: "小明失望地问：这么小的国家有什么了不起？", pinyin: "xiǎo míng shī wàng de wèn zhè me xiǎo de guó jiā yǒu shén me liǎo bù qǐ",
+          vocabulary: [ { word:"了不起", pinyin:"liǎo bù qǐ", definition:"非常好，超出一般，值得让人佩服。", english:"remarkable; amazing", example:"他小小年纪就会三种语言，真了不起。" } ] },
+        { pageNumber: 5, text: "老师微笑着说：虽然我们小，却很团结。", pinyin: "lǎo shī wēi xiào zhe shuō suī rán wǒ men xiǎo què hěn tuán jié",
+          vocabulary: [ { word:"团结", pinyin:"tuán jié", definition:"大家齐心合力，紧紧地联合在一起。", english:"unity; to unite", example:"我们要团结起来，共同面对困难。" } ] },
+        { pageNumber: 6, text: "不同种族的人，说着不同的语言，却像一家人。", pinyin: "bù tóng zhǒng zú de rén shuō zhe bù tóng de yǔ yán què xiàng yī jiā rén",
+          vocabulary: [ { word:"种族", pinyin:"zhǒng zú", definition:"有共同来源和特征的人群，如华族、马来族、印度族。", english:"race; ethnic group", example:"新加坡有不同种族的人和睦相处。" } ] },
+        { pageNumber: 7, text: "小明听了，心里充满了自豪。", pinyin: "xiǎo míng tīng le xīn lǐ chōng mǎn le zì háo",
+          vocabulary: [ { word:"自豪", pinyin:"zì háo", definition:"因为自己或集体的成就而感到光荣、骄傲。", english:"proud", example:"我为自己的国家感到自豪。" } ] },
+        { pageNumber: 8, text: "这个小红点，就是他深爱的家园。", pinyin: "zhè gè xiǎo hóng diǎn jiù shì tā shēn ài de jiā yuán",
+          vocabulary: [ { word:"家园", pinyin:"jiā yuán", definition:"家庭生活的地方；温暖、可爱的家乡。", english:"homeland; home", example:"新加坡是我们美丽的家园。" } ] }
+      ]
+    },
+    {
+      id: "story-yugong",
+      title: "愚公移山",
+      englishTitle: "The Old Man Who Moved Mountains",
+      level: "Secondary 1",
+      estimatedReadTime: "5 mins",
+      category: "寓言故事 · Classical Fable",
+      accent: "cyan",
+      glyph: "⛰️",
+      pages: [
+        { pageNumber: 1, text: "从前，有一位老人叫愚公。", pinyin: "cóng qián yǒu yī wèi lǎo rén jiào yú gōng", vocabulary: [] },
+        { pageNumber: 2, text: "他家门前有两座大山，挡住了去路。", pinyin: "tā jiā mén qián yǒu liǎng zuò dà shān dǎng zhù le qù lù",
+          vocabulary: [ { word:"挡住", pinyin:"dǎng zhù", definition:"拦在前面，使人或东西不能通过。", english:"to block; to obstruct", example:"两座大山挡住了村子的去路。" } ] },
+        { pageNumber: 3, text: "愚公决定带领全家人，把大山搬走。", pinyin: "yú gōng jué dìng dài lǐng quán jiā rén bǎ dà shān bān zǒu", vocabulary: [] },
+        { pageNumber: 4, text: "邻居笑他太傻，这么老了怎么搬得动？", pinyin: "lín jū xiào tā tài shǎ zhè me lǎo le zěn me bān de dòng", vocabulary: [] },
+        { pageNumber: 5, text: "愚公说：我死了还有儿子，子子孙孙没有尽头。", pinyin: "yú gōng shuō wǒ sǐ le hái yǒu ér zi zǐ zǐ sūn sūn méi yǒu jìn tóu", vocabulary: [] },
+        { pageNumber: 6, text: "他们坚持不懈，天天挖山不停。", pinyin: "tā men jiān chí bù xiè tiān tiān wā shān bù tíng",
+          vocabulary: [ { word:"坚持不懈", pinyin:"jiān chí bù xiè", definition:"坚持到底，一点也不松懈、不放弃。", english:"to persevere unremittingly", example:"他坚持不懈地练习，终于成功了。" } ] },
+        { pageNumber: 7, text: "天帝被感动了，派神仙把两座山搬走。", pinyin: "tiān dì bèi gǎn dòng le pài shén xiān bǎ liǎng zuò shān bān zǒu",
+          vocabulary: [ { word:"感动", pinyin:"gǎn dòng", definition:"因为受到某件事的触动而心里产生情感。", english:"to be moved; touched", example:"他的努力让大家都很感动。" } ] },
+        { pageNumber: 8, text: "只要有恒心，再难的事也能成功。", pinyin: "zhǐ yào yǒu héng xīn zài nán de shì yě néng chéng gōng",
+          vocabulary: [ { word:"恒心", pinyin:"héng xīn", definition:"长久不变的决心和毅力。", english:"perseverance", example:"做任何事都要有恒心。" }, { word:"愚公移山", pinyin:"yú gōng yí shān", definition:"比喻做事有毅力、不怕困难，坚持到底就能成功。", english:"the Foolish Old Man moves mountains; perseverance conquers all", example:"学习要有愚公移山的精神。" } ] }
+      ]
+    }
+  ];
+  </script>
+
+  <!-- ============ THREE.JS 3D SCENE ============ -->
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+    const ACCENTS = {
+      cyan:    new THREE.Color('#00F0FF'),
+      quantum: new THREE.Color('#7000FF'),
+      amber:   new THREE.Color('#FFB800'),
+    };
+
+    let renderer, scene, camera, controls;
+    let bookGroup, turningPage, pedestalRing, keyLight, ambientParticles;
+    let flipState = null;          // {from,to,start,dur}
+    let camTween = null;           // {fromPos,toPos,fromTarget,toTarget,start,dur}
+    const clock = new THREE.Clock();
+    let currentAccent = ACCENTS.cyan;
+
+    const LIB_CAM = new THREE.Vector3(0, 1.9, 8.2);
+    const LIB_TGT = new THREE.Vector3(0, 0.4, 0);
+    const READ_CAM = new THREE.Vector3(0, 1.2, 5.0);
+    const READ_TGT = new THREE.Vector3(0, 0.7, 0);
+
+    function init() {
+      const canvas = document.getElementById('bg-webgl');
+      renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.setSize(window.innerWidth, window.innerHeight);
+
+      scene = new THREE.Scene();
+      scene.fog = new THREE.FogExp2(0x0A0D14, 0.055);
+
+      camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 100);
+      camera.position.copy(LIB_CAM);
+
+      controls = new OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.06;
+      controls.enablePan = false;
+      controls.enableZoom = false;
+      controls.minPolarAngle = Math.PI * 0.28;
+      controls.maxPolarAngle = Math.PI * 0.6;
+      controls.target.copy(LIB_TGT);
+      controls.autoRotate = true;
+      controls.autoRotateSpeed = 0.55;
+
+      // Lights
+      scene.add(new THREE.AmbientLight(0x223044, 0.9));
+      const rim = new THREE.DirectionalLight(0x4060ff, 0.5);
+      rim.position.set(-4, 6, -3);
+      scene.add(rim);
+      keyLight = new THREE.PointLight(0x00F0FF, 8, 14, 2);
+      keyLight.position.set(0, 1.4, 0.6);
+      scene.add(keyLight);
+
+      buildPedestal();
+      buildBook();
+      buildParticles();
+      buildStarfield();
+
+      window.addEventListener('resize', onResize);
+      animate();
+    }
+
+    function buildPedestal() {
+      const g = new THREE.Group();
+      // dark disc
+      const disc = new THREE.Mesh(
+        new THREE.CylinderGeometry(2.5, 2.9, 0.32, 64),
+        new THREE.MeshStandardMaterial({ color: 0x0d1220, metalness: 0.8, roughness: 0.35 })
+      );
+      disc.position.y = -0.9;
+      g.add(disc);
+      // neon rim
+      pedestalRing = new THREE.Mesh(
+        new THREE.TorusGeometry(2.55, 0.035, 16, 120),
+        new THREE.MeshBasicMaterial({ color: 0x00F0FF })
+      );
+      pedestalRing.rotation.x = Math.PI / 2;
+      pedestalRing.position.y = -0.74;
+      g.add(pedestalRing);
+      // inner glow ring
+      const inner = new THREE.Mesh(
+        new THREE.RingGeometry(1.2, 2.35, 80),
+        new THREE.MeshBasicMaterial({ color: 0x0a2030, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+      );
+      inner.rotation.x = -Math.PI / 2;
+      inner.position.y = -0.73;
+      g.add(inner);
+      scene.add(g);
+    }
+
+    function holoMaterial(color, opacity) {
+      return new THREE.MeshBasicMaterial({ color, transparent: true, opacity, side: THREE.DoubleSide });
+    }
+
+    function makePage(w, h, color, opacity) {
+      const grp = new THREE.Group();
+      const face = new THREE.Mesh(new THREE.PlaneGeometry(w, h), holoMaterial(color, opacity));
+      grp.add(face);
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.PlaneGeometry(w, h)),
+        new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.25 })
+      );
+      grp.add(edges);
+      // subtle "text lines" as decoration
+      const lineMat = new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.35 });
+      for (let i = 0; i < 6; i++) {
+        const y = h/2 - 0.35 - i * (h - 0.7) / 6;
+        const pts = [ new THREE.Vector3(-w/2 + 0.28, y, 0.01), new THREE.Vector3(w/2 - 0.28 - (i%2)*0.5, y, 0.01) ];
+        grp.add(new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts), lineMat));
+      }
+      return grp;
+    }
+
+    function buildBook() {
+      bookGroup = new THREE.Group();
+      bookGroup.position.y = 0.55;
+      const W = 1.7, H = 2.2;
+
+      // Back spine glow
+      const spine = new THREE.Mesh(
+        new THREE.BoxGeometry(0.12, H + 0.1, 0.28),
+        new THREE.MeshStandardMaterial({ color: 0x0d1220, metalness: 0.7, roughness: 0.4, emissive: 0x00303a, emissiveIntensity: 0.6 })
+      );
+      bookGroup.add(spine);
+
+      // Left + right static pages, tilted open
+      const left = makePage(W, H, 0x00F0FF, 0.16);
+      left.position.set(-W/2 - 0.06, 0, 0);
+      left.rotation.y = 0.28;
+      bookGroup.add(left);
+
+      const right = makePage(W, H, 0x00F0FF, 0.16);
+      right.position.set(W/2 + 0.06, 0, 0);
+      right.rotation.y = -0.28;
+      bookGroup.add(right);
+
+      // Turning page — pivots at the spine (x = 0)
+      const pivot = new THREE.Group();
+      pivot.position.set(0, 0, 0.02);
+      const tp = makePage(W, H, 0x7000FF, 0.28);
+      tp.position.set(W/2 + 0.06, 0, 0);
+      tp.rotation.y = -0.28;
+      pivot.add(tp);
+      pivot.visible = false;
+      turningPage = pivot;
+      bookGroup.add(pivot);
+
+      // floating title glyph plane above book
+      scene.add(bookGroup);
+      bookGroup.userData = { left, right, spine };
+    }
+
+    function buildParticles() {
+      const N = 900;
+      const pos = new Float32Array(N * 3);
+      const col = new Float32Array(N * 3);
+      const c1 = new THREE.Color(0x00F0FF), c2 = new THREE.Color(0x7000FF);
+      for (let i = 0; i < N; i++) {
+        const r = 2 + Math.random() * 7;
+        const th = Math.random() * Math.PI * 2;
+        const y = (Math.random() - 0.5) * 7;
+        pos[i*3] = Math.cos(th) * r;
+        pos[i*3+1] = y;
+        pos[i*3+2] = Math.sin(th) * r;
+        const c = Math.random() > 0.5 ? c1 : c2;
+        col[i*3] = c.r; col[i*3+1] = c.g; col[i*3+2] = c.b;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      geo.setAttribute('color', new THREE.BufferAttribute(col, 3));
+      const mat = new THREE.PointsMaterial({ size: 0.045, vertexColors: true, transparent: true, opacity: 0.85, blending: THREE.AdditiveBlending, depthWrite: false });
+      ambientParticles = new THREE.Points(geo, mat);
+      scene.add(ambientParticles);
+    }
+
+    function buildStarfield() {
+      const N = 500;
+      const pos = new Float32Array(N * 3);
+      for (let i = 0; i < N; i++) {
+        pos[i*3] = (Math.random() - 0.5) * 60;
+        pos[i*3+1] = (Math.random() - 0.5) * 40;
+        pos[i*3+2] = -10 - Math.random() * 30;
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
+      const mat = new THREE.PointsMaterial({ color: 0xffffff, size: 0.06, transparent: true, opacity: 0.4, depthWrite: false });
+      scene.add(new THREE.Points(geo, mat));
+    }
+
+    function onResize() {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    }
+
+    const easeInOut = t => t < 0.5 ? 2*t*t : 1 - Math.pow(-2*t + 2, 2) / 2;
+
+    function animate() {
+      requestAnimationFrame(animate);
+      const t = clock.getElapsedTime();
+      const dt = clock.getDelta();
+
+      // gentle book float
+      if (bookGroup) {
+        bookGroup.position.y = 0.55 + Math.sin(t * 0.9) * 0.06;
+        bookGroup.rotation.z = Math.sin(t * 0.6) * 0.015;
+      }
+      // particle drift
+      if (ambientParticles) {
+        ambientParticles.rotation.y = t * 0.03;
+        ambientParticles.material.opacity = 0.6 + Math.sin(t*1.5)*0.2;
+      }
+      // key light pulse
+      if (keyLight) keyLight.intensity = 6 + Math.sin(t * 2.0) * 1.6;
+      if (pedestalRing) pedestalRing.material.color.copy(currentAccent);
+
+      // page flip
+      if (flipState && turningPage) {
+        const p = Math.min((performance.now() - flipState.start) / flipState.dur, 1);
+        const e = easeInOut(p);
+        turningPage.rotation.y = flipState.from + (flipState.to - flipState.from) * e;
+        // lift slightly during flip
+        turningPage.position.z = 0.02 + Math.sin(p * Math.PI) * 0.35;
+        if (p >= 1) { turningPage.visible = false; flipState = null; }
+      }
+
+      // camera tween
+      if (camTween) {
+        const p = Math.min((performance.now() - camTween.start) / camTween.dur, 1);
+        const e = easeInOut(p);
+        camera.position.lerpVectors(camTween.fromPos, camTween.toPos, e);
+        controls.target.lerpVectors(camTween.fromTarget, camTween.toTarget, e);
+        if (p >= 1) camTween = null;
+      }
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    // ===== Public hooks for UI =====
+    window.Scene3D = {
+      enterReader(accentName) {
+        currentAccent = ACCENTS[accentName] || ACCENTS.cyan;
+        if (keyLight) keyLight.color.copy(currentAccent);
+        controls.autoRotate = false;
+        camTween = { fromPos: camera.position.clone(), toPos: READ_CAM.clone(),
+          fromTarget: controls.target.clone(), toTarget: READ_TGT.clone(), start: performance.now(), dur: 1100 };
+      },
+      exitReader() {
+        controls.autoRotate = true;
+        currentAccent = ACCENTS.cyan;
+        if (keyLight) keyLight.color.copy(ACCENTS.cyan);
+        camTween = { fromPos: camera.position.clone(), toPos: LIB_CAM.clone(),
+          fromTarget: controls.target.clone(), toTarget: LIB_TGT.clone(), start: performance.now(), dur: 1000 };
+      },
+      flip(direction) {
+        if (!turningPage) return;
+        turningPage.visible = true;
+        if (direction === 'next') { flipState = { from: 0, to: Math.PI, start: performance.now(), dur: 560 }; }
+        else { flipState = { from: Math.PI, to: 0, start: performance.now(), dur: 560 }; }
+      },
+      pulse() {
+        if (keyLight) keyLight.intensity = 16;
+      }
+    };
+
+    // start after a tick so loader shows briefly
+    try { init(); } catch (e) { console.error('3D init failed', e); }
+  </script>
+
+  <!-- ============ UI LOGIC ============ -->
+  <script>
+  (function () {
+    const stories = window.STORY_LIBRARY;
+    const $ = (id) => document.getElementById(id);
+
+    const state = {
+      story: null,
+      page: 0,
+      pinyin: true,
+      fontIdx: 1, // 0 small,1 std,2 large
+    };
+    const FONT_SIZES = [
+      { label: '小', scale: '0.86' },
+      { label: '标准', scale: '1' },
+      { label: '大', scale: '1.18' },
+    ];
+
+    // ---------- helpers ----------
+    const isHan = (ch) => /[㐀-鿿豈-﫿]/.test(ch);
+    const escHtml = (s) => s.replace(/[&<>"]/g, m => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;' }[m]));
+
+    function accentHex(a) {
+      return a === 'quantum' ? '#7000FF' : a === 'amber' ? '#FFB800' : '#00F0FF';
+    }
+
+    // Build ruby + vocab-highlighted HTML for a page
+    function buildPageHTML(page) {
+      const syl = (page.pinyin || '').trim().split(/\s+/).filter(Boolean);
+      let si = 0;
+      const text = page.text || '';
+      const vsorted = [...(page.vocabulary || [])].sort((a, b) => b.word.length - a.word.length);
+
+      const ruby = (str) => {
+        let out = '';
+        for (const ch of str) {
+          if (isHan(ch)) {
+            const py = syl[si++] || '';
+            out += `<ruby>${escHtml(ch)}<rt>${escHtml(py)}</rt></ruby>`;
+          } else {
+            out += `<span class="punc">${escHtml(ch)}</span>`;
+          }
+        }
+        return out;
+      };
+
+      let html = '', i = 0;
+      while (i < text.length) {
+        let matched = null;
+        for (const v of vsorted) { if (v.word && text.startsWith(v.word, i)) { matched = v; break; } }
+        if (matched) {
+          html += `<span class="vocab" data-word="${escHtml(matched.word)}" role="button" tabindex="0" aria-label="词语 ${escHtml(matched.word)}">${ruby(matched.word)}</span>`;
+          i += matched.word.length;
+        } else {
+          html += ruby(text[i]); i += 1;
+        }
+      }
+      return html;
+    }
+
+    // ---------- Library ----------
+    function renderLibrary() {
+      const grid = $('story-grid');
+      grid.innerHTML = stories.map((s, idx) => {
+        const hex = accentHex(s.accent);
+        return `
+        <button class="story-card glass glow-border hud-corners scanlines rounded-3xl p-6 text-left relative overflow-hidden group fade-in"
+                style="animation-delay:${idx * 80}ms" data-id="${s.id}">
+          <div class="card-sheen absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+          <div class="flex items-start justify-between">
+            <div class="w-14 h-14 rounded-2xl grid place-items-center text-3xl floaty"
+                 style="background:${hex}14;border:1px solid ${hex}44;box-shadow:0 0 24px ${hex}33">${s.glyph}</div>
+            <span class="font-hud text-[9px] tracking-hud px-2.5 py-1 rounded-full"
+                  style="color:${hex};border:1px solid ${hex}44;background:${hex}10">${escHtml(s.level)}</span>
+          </div>
+          <h3 class="mt-5 font-serif font-bold text-2xl text-crisp group-hover:text-cyan transition-colors">${escHtml(s.title)}</h3>
+          <p class="font-hud text-[11px] tracking-hud text-metal/70 mt-0.5">${escHtml(s.englishTitle)}</p>
+          <p class="text-xs text-metal mt-3">${escHtml(s.category)}</p>
+          <div class="flex items-center gap-4 mt-5 pt-4 border-t border-white/10 text-metal">
+            <span class="flex items-center gap-1.5 text-xs"><i data-lucide="clock" class="w-3.5 h-3.5"></i>${escHtml(s.estimatedReadTime)}</span>
+            <span class="flex items-center gap-1.5 text-xs"><i data-lucide="layers" class="w-3.5 h-3.5"></i>${s.pages.length} 页</span>
+            <span class="ml-auto flex items-center gap-1 text-xs font-hud tracking-hud" style="color:${hex}">
+              阅读 <i data-lucide="arrow-right" class="w-3.5 h-3.5"></i>
+            </span>
+          </div>
+        </button>`;
+      }).join('');
+      grid.querySelectorAll('.story-card').forEach(el => el.addEventListener('click', () => openStory(el.dataset.id)));
+      if (window.lucide) lucide.createIcons();
+    }
+
+    // ---------- Reader ----------
+    function openStory(id) {
+      const s = stories.find(x => x.id === id);
+      if (!s) return;
+      state.story = s; state.page = 0;
+      $('reader-title').textContent = s.title;
+      $('reader-sub').textContent = `${s.englishTitle} · ${s.category}`;
+      $('page-total').textContent = String(s.pages.length).padStart(2, '0');
+
+      $('library').classList.add('is-hidden');
+      $('reader').classList.remove('is-hidden');
+      if (window.Scene3D) Scene3D.enterReader(s.accent);
+      renderPage(false);
+    }
+
+    function closeStory() {
+      stopTTS();
+      hideVocab();
+      $('reader').classList.add('is-hidden');
+      $('library').classList.remove('is-hidden');
+      state.story = null;
+      if (window.Scene3D) Scene3D.exitReader();
+    }
+
+    function renderPage(animate, direction) {
+      const s = state.story; if (!s) return;
+      const page = s.pages[state.page];
+      const inner = $('page-inner');
+
+      inner.className = `page-inner reading ${state.pinyin ? 'pinyin-on' : ''} text-center w-full`;
+      inner.style.setProperty('--fs', FONT_SIZES[state.fontIdx].scale);
+      inner.innerHTML = buildPageHTML(page);
+
+      // page-flip css animation
+      if (animate) {
+        inner.classList.remove('flip-next', 'flip-prev');
+        void inner.offsetWidth; // reflow
+        inner.classList.add(direction === 'prev' ? 'flip-prev' : 'flip-next');
+      }
+
+      // counters
+      $('page-count').textContent = String(state.page + 1).padStart(2, '0');
+      const pct = ((state.page + 1) / s.pages.length) * 100;
+      $('progress-fill').style.width = pct + '%';
+
+      // nav disable
+      const first = state.page === 0, last = state.page === s.pages.length - 1;
+      ['btn-prev', 'btn-prev-m'].forEach(id => $(id) && ($(id).disabled = first));
+      ['btn-next', 'btn-next-m', 'btn-next-d'].forEach(id => $(id) && ($(id).disabled = last));
+
+      renderDots();
+      bindVocab();
+      if (window.lucide) lucide.createIcons();
+    }
+
+    function renderDots() {
+      const s = state.story; if (!s) return;
+      $('pdots').innerHTML = s.pages.map((_, i) =>
+        `<span class="pdot rounded-full ${i === state.page ? 'w-5 bg-cyan' : 'w-1.5 bg-white/25'}" style="height:6px"></span>`
+      ).join('');
+    }
+
+    function goNext() {
+      const s = state.story; if (!s || state.page >= s.pages.length - 1) return;
+      stopTTS(); hideVocab();
+      state.page++;
+      if (window.Scene3D) Scene3D.flip('next');
+      renderPage(true, 'next');
+    }
+    function goPrev() {
+      if (!state.story || state.page <= 0) return;
+      stopTTS(); hideVocab();
+      state.page--;
+      if (window.Scene3D) Scene3D.flip('prev');
+      renderPage(true, 'prev');
+    }
+
+    // ---------- Pinyin ----------
+    function togglePinyin() {
+      state.pinyin = !state.pinyin;
+      localStorage.setItem('codex_pinyin', state.pinyin ? '1' : '0');
+      $('btn-pinyin').classList.toggle('on', state.pinyin);
+      $('page-inner').classList.toggle('pinyin-on', state.pinyin);
+    }
+
+    // ---------- Font size ----------
+    function cycleFont() {
+      state.fontIdx = (state.fontIdx + 1) % FONT_SIZES.length;
+      localStorage.setItem('codex_font', String(state.fontIdx));
+      $('font-label').textContent = FONT_SIZES[state.fontIdx].label;
+      $('page-inner').style.setProperty('--fs', FONT_SIZES[state.fontIdx].scale);
+    }
+
+    // ---------- TTS ----------
+    let ttsOn = false, zhVoice = null;
+    function pickVoice() {
+      const voices = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+      zhVoice = voices.find(v => /zh[-_]CN/i.test(v.lang)) ||
+                voices.find(v => /^zh/i.test(v.lang)) ||
+                voices.find(v => /chinese|mandarin|普通话|华语/i.test(v.name)) || null;
+    }
+    function speak(text, onEnd) {
+      if (!('speechSynthesis' in window)) { alert('您的浏览器不支持朗读功能。'); return; }
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'zh-CN'; u.rate = 0.85; u.pitch = 1;
+      if (zhVoice) u.voice = zhVoice;
+      u.onend = () => { onEnd && onEnd(); };
+      u.onerror = () => { onEnd && onEnd(); };
+      speechSynthesis.speak(u);
+    }
+    function toggleTTS() {
+      if (!state.story) return;
+      if (ttsOn) { stopTTS(); return; }
+      const page = state.story.pages[state.page];
+      ttsOn = true;
+      $('btn-tts').classList.add('on');
+      if (window.Scene3D) Scene3D.pulse();
+      speak(page.text, () => stopTTS());
+    }
+    function stopTTS() {
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      ttsOn = false;
+      const b = $('btn-tts'); if (b) b.classList.remove('on');
+    }
+
+    // ---------- Vocab popover ----------
+    const pop = () => $('vocab-pop');
+    function bindVocab() {
+      $('page-inner').querySelectorAll('.vocab').forEach(el => {
+        const handler = (e) => { e.stopPropagation(); showVocab(el); };
+        el.addEventListener('click', handler);
+        el.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(e); } });
+      });
+    }
+    let activeVocabEl = null;
+    function showVocab(el) {
+      const word = el.dataset.word;
+      const page = state.story.pages[state.page];
+      const v = (page.vocabulary || []).find(x => x.word === word);
+      if (!v) return;
+      $('page-inner').querySelectorAll('.vocab.active').forEach(x => x.classList.remove('active'));
+      el.classList.add('active'); activeVocabEl = el;
+
+      $('vp-word').textContent = v.word;
+      $('vp-py').textContent = v.pinyin || '';
+      $('vp-def').textContent = v.definition || '';
+      $('vp-en').textContent = v.english || '';
+      $('vp-ex').textContent = v.example || '—';
+
+      const p = pop();
+      p.classList.remove('hidden-pop');
+      // position near element, clamped to viewport
+      requestAnimationFrame(() => positionPop(el));
+      $('vp-speak').onclick = (e) => { e.stopPropagation(); speak(v.word); if (window.Scene3D) Scene3D.pulse(); };
+    }
+    function positionPop(el) {
+      const p = pop();
+      const r = el.getBoundingClientRect();
+      const pw = p.offsetWidth, ph = p.offsetHeight;
+      let left = r.left + r.width / 2 - pw / 2;
+      let top = r.bottom + 12;
+      if (top + ph > window.innerHeight - 12) top = r.top - ph - 12;
+      left = Math.max(12, Math.min(left, window.innerWidth - pw - 12));
+      top = Math.max(12, top);
+      p.style.left = left + 'px';
+      p.style.top = top + 'px';
+    }
+    function hideVocab() {
+      pop().classList.add('hidden-pop');
+      if (activeVocabEl) activeVocabEl.classList.remove('active');
+      activeVocabEl = null;
+    }
+
+    // ---------- Wire up ----------
+    function bind() {
+      $('btn-back').addEventListener('click', closeStory);
+      ['btn-prev', 'btn-prev-m'].forEach(id => $(id) && $(id).addEventListener('click', goPrev));
+      ['btn-next', 'btn-next-m', 'btn-next-d'].forEach(id => $(id) && $(id).addEventListener('click', goNext));
+      $('btn-pinyin').addEventListener('click', togglePinyin);
+      $('btn-tts').addEventListener('click', toggleTTS);
+      $('btn-font').addEventListener('click', cycleFont);
+      $('vocab-close').addEventListener('click', hideVocab);
+      document.addEventListener('click', (e) => {
+        if (!e.target.closest('#vocab-pop') && !e.target.closest('.vocab')) hideVocab();
+      });
+      document.addEventListener('keydown', (e) => {
+        if ($('reader').classList.contains('is-hidden')) return;
+        if (e.key === 'ArrowRight') goNext();
+        else if (e.key === 'ArrowLeft') goPrev();
+        else if (e.key === 'Escape') { if (!pop().classList.contains('hidden-pop')) hideVocab(); else closeStory(); }
+        else if (e.key.toLowerCase() === 'p') togglePinyin();
+        else if (e.key.toLowerCase() === 's') toggleTTS();
+      });
+      window.addEventListener('resize', () => { if (activeVocabEl) positionPop(activeVocabEl); });
+      window.addEventListener('scroll', hideVocab, true);
+
+      // restore prefs
+      const sp = localStorage.getItem('codex_pinyin');
+      if (sp !== null) { state.pinyin = sp === '1'; $('btn-pinyin').classList.toggle('on', state.pinyin); }
+      const sf = localStorage.getItem('codex_font');
+      if (sf !== null) { state.fontIdx = Math.min(2, Math.max(0, parseInt(sf, 10) || 1)); $('font-label').textContent = FONT_SIZES[state.fontIdx].label; }
+    }
+
+    // TTS voices load async
+    if ('speechSynthesis' in window) {
+      pickVoice();
+      speechSynthesis.onvoiceschanged = pickVoice;
+    }
+
+    // Init
+    function boot() {
+      renderLibrary();
+      bind();
+      if (window.lucide) lucide.createIcons();
+      // hide loader
+      setTimeout(() => {
+        const l = $('loader');
+        l.style.opacity = '0';
+        setTimeout(() => l.classList.add('is-hidden'), 800);
+      }, 900);
+    }
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+    else boot();
+  })();
+  </script>
+</body>
+</html>

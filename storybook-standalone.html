@@ -1,0 +1,733 @@
+<!DOCTYPE html>
+<html lang="zh-Hans-SG">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+<meta name="theme-color" content="#0A0D14" />
+<title>量子书阁 · QUANTUM CODEX｜3D 华文数字故事馆</title>
+<meta name="description" content="为新加坡中一学生打造的未来感全息华文故事馆：汉语拼音、词汇释义、朗读功能。自包含，无需网络。" />
+</head>
+<body>
+<style>
+  /* ============================================================
+     量子书阁 · QUANTUM CODEX — self-contained, no external deps.
+     Deliberate single-theme neon "holographic terminal" design.
+     ============================================================ */
+  :root{
+    --pitch:#0A0D14; --void:#121824; --panel:#141b29;
+    --cyan:#00F0FF; --quantum:#7000FF; --amber:#FFB800;
+    --crisp:#F8FAFC; --metal:#94A3B8; --line:rgba(148,163,184,.16);
+    --ui:"Space Grotesk",ui-sans-serif,system-ui,-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;
+    --serif:"Noto Serif SC","Source Han Serif SC","Songti SC","STSong","SimSun",ui-serif,Georgia,serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--pitch); color:var(--crisp);
+    font-family:var(--ui); -webkit-font-smoothing:antialiased;
+    overflow:hidden; height:100vh;
+  }
+  #codex-root{position:fixed; inset:0; overflow:hidden;}
+  button{font-family:inherit;}
+  ::selection{background:rgba(0,240,255,.25); color:#fff;}
+  ::-webkit-scrollbar{width:8px;height:8px;}
+  ::-webkit-scrollbar-thumb{background:rgba(0,240,255,.25);border-radius:999px;}
+
+  /* ---------- Ambient background ---------- */
+  #fx{position:absolute; inset:0; z-index:0; display:block;}
+  .env-grid{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background-image:
+      linear-gradient(rgba(0,240,255,.04) 1px,transparent 1px),
+      linear-gradient(90deg,rgba(0,240,255,.04) 1px,transparent 1px);
+    background-size:46px 46px;
+    -webkit-mask-image:radial-gradient(ellipse 80% 72% at 50% 52%,#000 28%,transparent 86%);
+    mask-image:radial-gradient(ellipse 80% 72% at 50% 52%,#000 28%,transparent 86%);
+  }
+  .env-vignette{
+    position:absolute; inset:0; z-index:1; pointer-events:none;
+    background:radial-gradient(ellipse 120% 92% at 50% 38%,transparent 42%,rgba(10,13,20,.72) 100%);
+  }
+
+  /* ---------- Glass / HUD primitives ---------- */
+  .glass{
+    background:linear-gradient(160deg,rgba(18,24,36,.74),rgba(10,13,20,.62));
+    -webkit-backdrop-filter:blur(16px) saturate(150%);
+    backdrop-filter:blur(16px) saturate(150%);
+    border:1px solid var(--line); border-radius:18px;
+  }
+  .glow-border{position:relative;}
+  .glow-border::before{
+    content:""; position:absolute; inset:0; border-radius:inherit; padding:1px;
+    background:linear-gradient(135deg,rgba(0,240,255,.55),rgba(112,0,255,.28) 45%,transparent 72%);
+    -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+    -webkit-mask-composite:xor; mask-composite:exclude; pointer-events:none;
+  }
+  .hud-corners::after,.hud-corners::before{
+    content:""; position:absolute; width:15px; height:15px; pointer-events:none;
+    border:0 solid rgba(0,240,255,.7);
+  }
+  .hud-corners::before{top:9px;left:9px;border-top-width:2px;border-left-width:2px;border-top-left-radius:6px;}
+  .hud-corners::after{bottom:9px;right:9px;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:6px;}
+  .scanlines::after{
+    content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:.5;
+    background:repeating-linear-gradient(180deg,rgba(255,255,255,.02) 0 1px,transparent 1px 3px);
+  }
+  .neon{text-shadow:0 0 18px rgba(0,240,255,.42);}
+  .track{letter-spacing:.22em;} .track-mega{letter-spacing:.42em;}
+  .cyan-glow{box-shadow:0 0 26px rgba(0,240,255,.3);}
+  .amber-glow{box-shadow:0 0 22px rgba(255,184,0,.26);}
+
+  /* ---------- Top HUD bar ---------- */
+  #topbar{
+    position:absolute; top:0; left:0; right:0; z-index:20;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:14px clamp(16px,4vw,34px); pointer-events:none;
+  }
+  #topbar .brand{display:flex; align-items:center; gap:12px; pointer-events:auto;}
+  .brand-badge{width:38px;height:38px;border-radius:12px;display:grid;place-items:center;}
+  .brand-badge svg{width:17px;height:17px;color:var(--cyan);}
+  .brand h1{font-size:13px;margin:0;font-weight:600;letter-spacing:.22em;color:var(--crisp);}
+  .brand p{font-size:8px;margin:1px 0 0;color:rgba(148,163,184,.7);letter-spacing:.42em;}
+  .chips{display:flex; gap:8px; pointer-events:auto;}
+  .chip{font-size:10px;letter-spacing:.22em;padding:6px 12px;border-radius:10px;color:var(--metal);}
+  .chip.live{color:var(--cyan);display:flex;align-items:center;gap:7px;}
+  .dot{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:pulse 2.4s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+
+  /* ---------- Screens ---------- */
+  .screen{position:absolute; inset:0; z-index:5;}
+  #reader{z-index:6;}
+  .is-hidden{display:none !important;}
+
+  /* ---------- Library ---------- */
+  #library{overflow-y:auto;}
+  .lib-wrap{min-height:100%; display:flex; flex-direction:column; padding:96px clamp(16px,4vw,34px) 64px;}
+  .hero{max-width:640px; margin:0 auto 40px; text-align:center;}
+  .eyebrow{
+    display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:999px;margin-bottom:22px;
+    font-size:10px;letter-spacing:.22em;color:var(--metal);
+  }
+  .eyebrow svg{width:13px;height:13px;color:var(--amber);}
+  .hero h2{font-family:var(--serif);font-weight:700;font-size:clamp(2.2rem,6vw,3.7rem);line-height:1.15;margin:0;text-wrap:balance;}
+  .hero h2 .hl{color:var(--cyan);}
+  .hero p{margin:16px auto 0;max-width:34rem;color:var(--metal);font-size:clamp(.86rem,2vw,1rem);line-height:1.7;}
+  .grid{max-width:1120px;margin:0 auto;width:100%;display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:20px;}
+  .card{
+    text-align:left;position:relative;overflow:hidden;cursor:pointer;padding:24px;border-radius:24px;
+    color:var(--crisp);transition:transform .5s cubic-bezier(.19,1,.22,1),box-shadow .5s;
+  }
+  .card:hover{transform:translateY(-8px) scale(1.015);}
+  .card:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;}
+  .card .sheen{position:absolute;inset:0;opacity:0;transition:opacity .5s;
+    background:linear-gradient(115deg,transparent 40%,rgba(0,240,255,.09) 50%,transparent 60%);}
+  .card:hover .sheen{opacity:1;}
+  .card-top{display:flex;align-items:flex-start;justify-content:space-between;}
+  .glyph{width:56px;height:56px;border-radius:16px;display:grid;place-items:center;font-size:30px;animation:floaty 6s ease-in-out infinite;}
+  @keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-7px)}}
+  .lvl{font-size:9px;letter-spacing:.22em;padding:4px 10px;border-radius:999px;}
+  .card h3{font-family:var(--serif);font-weight:700;font-size:1.5rem;margin:20px 0 0;transition:color .3s;}
+  .card:hover h3{color:var(--cyan);}
+  .card .en{font-size:11px;letter-spacing:.16em;color:rgba(148,163,184,.7);margin:2px 0 0;}
+  .card .cat{font-size:12px;color:var(--metal);margin:12px 0 0;}
+  .card-foot{display:flex;align-items:center;gap:16px;margin-top:20px;padding-top:16px;border-top:1px solid rgba(255,255,255,.1);color:var(--metal);font-size:12px;}
+  .card-foot .m{display:flex;align-items:center;gap:6px;}
+  .card-foot svg{width:14px;height:14px;}
+  .card-foot .go{margin-left:auto;display:flex;align-items:center;gap:5px;letter-spacing:.16em;}
+  .lib-foot{margin-top:48px;text-align:center;font-size:10px;letter-spacing:.22em;color:rgba(148,163,184,.5);}
+
+  /* ---------- Reader layout ---------- */
+  #reader{display:flex;flex-direction:column;height:100%;}
+  .reader-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:78px clamp(16px,4vw,34px) 6px;}
+  .reader-bar .mid{flex:1;min-width:0;text-align:center;}
+  .reader-bar .mid h2{font-family:var(--serif);font-weight:700;font-size:clamp(1.1rem,3vw,1.6rem);margin:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .reader-bar .mid p{font-size:10px;letter-spacing:.18em;color:rgba(148,163,184,.7);margin:2px 0 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .counter{width:78px;text-align:right;font-size:12px;color:var(--metal);font-variant-numeric:tabular-nums;}
+  .counter b{color:var(--cyan);font-weight:600;}
+
+  .stage-wrap{flex:1;display:flex;align-items:center;justify-content:center;padding:0 clamp(16px,4vw,34px) 150px;min-height:0;position:relative;}
+  .stage{position:relative;width:100%;max-width:760px;}
+
+  /* CSS-3D holographic book behind the reading panel */
+  .book-scene{position:absolute;left:50%;top:50%;transform:translate(-50%,-46%);width:340px;height:300px;perspective:1300px;z-index:0;pointer-events:none;opacity:.9;}
+  .pedestal{position:absolute;left:50%;bottom:-6px;transform:translateX(-50%);width:320px;height:70px;
+    background:radial-gradient(ellipse at center,rgba(0,240,255,.28),rgba(0,240,255,.05) 55%,transparent 72%);
+    border-radius:50%;}
+  .pedestal::after{content:"";position:absolute;left:50%;top:44%;transform:translateX(-50%);width:210px;height:26px;border:1px solid rgba(0,240,255,.5);border-radius:50%;box-shadow:0 0 22px rgba(0,240,255,.35);}
+  .book{position:absolute;left:50%;top:44%;transform:translate(-50%,-50%);transform-style:preserve-3d;animation:bookfloat 6s ease-in-out infinite;}
+  @keyframes bookfloat{0%,100%{transform:translate(-50%,-50%) rotateX(6deg) translateY(0)}50%{transform:translate(-50%,-50%) rotateX(6deg) translateY(-10px)}}
+  .leaf{position:absolute;width:118px;height:170px;top:-85px;border-radius:4px 10px 10px 4px;
+    background:linear-gradient(135deg,rgba(0,240,255,.16),rgba(112,0,255,.1));
+    border:1px solid rgba(0,240,255,.4);box-shadow:0 0 26px rgba(0,240,255,.22);}
+  .leaf.left{left:-120px;transform:rotateY(26deg);transform-origin:right center;border-radius:10px 4px 4px 10px;background:linear-gradient(225deg,rgba(0,240,255,.16),rgba(112,0,255,.1));}
+  .leaf.right{left:2px;transform:rotateY(-26deg);transform-origin:left center;}
+  .leaf .lines{position:absolute;inset:16px 14px;display:flex;flex-direction:column;gap:12px;}
+  .leaf .lines i{display:block;height:2px;border-radius:2px;background:rgba(0,240,255,.4);}
+  .leaf .lines i:nth-child(2n){width:74%;}
+  .leaf.turning{left:2px;transform-origin:left center;z-index:5;opacity:0;
+    background:linear-gradient(135deg,rgba(112,0,255,.28),rgba(0,240,255,.14));border-color:rgba(112,0,255,.6);}
+  .leaf.turning.next{animation:leafNext .62s ease-in-out forwards;}
+  .leaf.turning.prev{animation:leafPrev .62s ease-in-out forwards;}
+  @keyframes leafNext{0%{opacity:1;transform:rotateY(-26deg)}100%{opacity:0;transform:rotateY(-172deg)}}
+  @keyframes leafPrev{0%{opacity:0;transform:rotateY(-172deg)}100%{opacity:1;transform:rotateY(-26deg)}}
+  .spine{position:absolute;left:-3px;top:-88px;width:6px;height:176px;border-radius:3px;background:linear-gradient(#0d1220,#1a2740);box-shadow:0 0 16px rgba(0,240,255,.4);}
+
+  /* Reading panel */
+  .panel{position:relative;z-index:1;padding:clamp(26px,4vw,52px);border-radius:28px;overflow:hidden;}
+  .panel .top-spark{position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:160px;height:2px;background:linear-gradient(90deg,transparent,var(--cyan),transparent);}
+  .page-stage{min-height:40vh;display:flex;align-items:center;justify-content:center;}
+  .reading{
+    font-family:var(--serif);font-weight:500;text-align:center;width:100%;
+    line-height:2.7;color:var(--crisp);
+    font-size:calc(clamp(1.3rem, 2.2vw + 0.9rem, 2.05rem) * var(--fs,1));
+    transition:font-size .3s ease;transform-origin:left center;
+  }
+  .reading ruby{margin:0 .02em;ruby-align:center;}
+  .reading rt{
+    font-family:var(--ui);font-weight:500;color:var(--cyan);
+    font-size:0;opacity:0;transform:translateY(3px);letter-spacing:0;
+    text-shadow:0 0 12px rgba(0,240,255,.35);
+    transition:opacity .35s ease,font-size .35s ease,transform .35s ease;
+  }
+  .reading.pinyin-on rt{font-size:.44em;opacity:1;transform:translateY(0);}
+  .reading .punc{color:#cbd5e1;}
+  .reading .vocab{cursor:pointer;position:relative;color:#FFE9A8;border-bottom:1.5px dashed rgba(255,184,0,.7);border-radius:3px;transition:color .25s,background .25s,box-shadow .25s;}
+  .reading .vocab:hover,.reading .vocab.active{color:var(--amber);background:rgba(255,184,0,.08);box-shadow:0 0 20px rgba(255,184,0,.22);}
+  .reading .vocab:focus-visible{outline:2px solid var(--amber);outline-offset:2px;}
+  .reading .vocab rt{color:var(--amber);text-shadow:0 0 12px rgba(255,184,0,.4);}
+  .flip-next{animation:flipNext .55s cubic-bezier(.36,.66,.3,1) both;}
+  .flip-prev{animation:flipPrev .55s cubic-bezier(.36,.66,.3,1) both;}
+  @keyframes flipNext{0%{opacity:0;transform:perspective(1400px) rotateY(26deg) translateX(22px);filter:blur(4px)}100%{opacity:1;transform:none;filter:none}}
+  @keyframes flipPrev{0%{opacity:0;transform:perspective(1400px) rotateY(-26deg) translateX(-22px);filter:blur(4px)}100%{opacity:1;transform:none;filter:none}}
+
+  /* Side arrows */
+  .side-arrow{position:absolute;top:50%;transform:translateY(-50%);width:48px;height:48px;border-radius:50%;display:grid;place-items:center;z-index:3;}
+  .side-arrow.prev{left:-64px;} .side-arrow.next{right:-64px;}
+  @media(max-width:900px){.side-arrow{display:none;}}
+
+  /* ---------- Control dock ---------- */
+  .dock-wrap{position:absolute;left:0;right:0;bottom:0;z-index:20;padding:0 clamp(16px,4vw,34px) 20px;}
+  .dock{max-width:760px;margin:0 auto;display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:20px;}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:8px;flex:none;
+    border-radius:12px;border:1px solid var(--line);background:rgba(18,24,36,.6);color:var(--crisp);
+    padding:10px 14px;font-size:12px;letter-spacing:.14em;cursor:pointer;transition:all .25s ease;
+  }
+  .btn svg{width:16px;height:16px;}
+  .btn:hover{border-color:rgba(0,240,255,.5);color:var(--cyan);box-shadow:0 0 20px rgba(0,240,255,.18);}
+  .btn:active{transform:scale(.96);}
+  .btn:focus-visible{outline:2px solid var(--cyan);outline-offset:2px;}
+  .btn[disabled]{opacity:.32;cursor:not-allowed;box-shadow:none;}
+  .btn.on{border-color:rgba(0,240,255,.7);color:var(--cyan);background:rgba(0,240,255,.08);box-shadow:0 0 22px rgba(0,240,255,.25);}
+  .btn.icon{width:44px;height:44px;padding:0;}
+  .btn.ghost{border-color:var(--line);}
+  .progress{flex:1;min-width:0;height:6px;border-radius:999px;background:rgba(255,255,255,.1);overflow:hidden;}
+  .progress i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,var(--cyan),var(--quantum));transition:width .5s ease;}
+  .label-hide{display:inline;}
+  @media(max-width:560px){.label-hide{display:none;} .btn{padding:10px;} .progress{display:none;}}
+  .dots{display:none;flex:1;justify-content:center;gap:6px;align-items:center;overflow:hidden;}
+  .dots i{height:6px;border-radius:999px;background:rgba(255,255,255,.25);transition:all .3s;}
+  .dots i.on{width:20px;background:var(--cyan);} .dots i{width:6px;}
+  @media(max-width:560px){.dots{display:flex;}}
+  .only-wide{display:inline-flex;} .only-narrow{display:none;}
+  @media(max-width:560px){.only-wide{display:none;} .only-narrow{display:inline-flex;}}
+
+  /* ---------- Vocab popover ---------- */
+  #pop{position:fixed;z-index:40;width:296px;max-width:88vw;padding:20px;border-radius:20px;
+    transition:opacity .22s ease,transform .22s ease;}
+  #pop.hide{opacity:0;transform:translateY(6px) scale(.98);pointer-events:none;}
+  #pop .x{position:absolute;top:12px;right:12px;background:none;border:none;color:var(--metal);cursor:pointer;padding:2px;}
+  #pop .x:hover{color:var(--crisp);}
+  #pop .x svg{width:16px;height:16px;}
+  #pop .py{font-size:12px;letter-spacing:.14em;color:var(--amber);}
+  #pop .wrow{display:flex;align-items:center;gap:10px;margin-top:2px;}
+  #pop .wrow h4{font-family:var(--serif);font-weight:700;font-size:1.55rem;margin:0;color:var(--crisp);}
+  #pop .sp{width:32px;height:32px;flex:none;border-radius:9px;border:1px solid var(--line);background:rgba(18,24,36,.6);color:var(--crisp);cursor:pointer;display:grid;place-items:center;}
+  #pop .sp:hover{border-color:rgba(0,240,255,.5);color:var(--cyan);}
+  #pop .sp svg{width:14px;height:14px;}
+  #pop .block{margin-top:12px;}
+  #pop .k{font-size:9px;letter-spacing:.2em;margin-bottom:3px;}
+  #pop .k.moe{color:rgba(0,240,255,.85);} #pop .k.en{color:rgba(112,0,255,.95);} #pop .k.ex{color:rgba(255,184,0,.85);}
+  #pop .def{font-size:13.5px;line-height:1.6;color:rgba(248,250,252,.92);}
+  #pop .eng{font-size:13.5px;line-height:1.6;color:var(--metal);}
+  #pop .ex{font-family:var(--serif);font-size:13.5px;line-height:1.6;color:rgba(248,250,252,.82);}
+  #pop .divider{border-top:1px solid rgba(255,255,255,.1);padding-top:12px;margin-top:12px;}
+
+  /* ---------- Loader ---------- */
+  #loader{position:absolute;inset:0;z-index:50;background:var(--pitch);display:grid;place-items:center;transition:opacity .7s ease;}
+  .ring{width:72px;height:72px;border-radius:50%;border:2px solid rgba(0,240,255,.15);border-top-color:var(--cyan);animation:spin 1s linear infinite;box-shadow:0 0 30px rgba(0,240,255,.3);margin:0 auto;}
+  @keyframes spin{to{transform:rotate(360deg)}}
+  #loader p{margin:24px 0 0;text-align:center;}
+  #loader .l1{color:var(--cyan);letter-spacing:.22em;font-size:13px;animation:pulse 2.4s ease-in-out infinite;}
+  #loader .l2{color:rgba(148,163,184,.6);letter-spacing:.42em;font-size:10px;margin-top:4px;}
+
+  .fade{animation:fade .6s ease both;}
+  @keyframes fade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+  @media(prefers-reduced-motion:reduce){
+    *{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.05ms !important;}
+  }
+</style>
+
+<div id="codex-root">
+  <canvas id="fx"></canvas>
+  <div class="env-grid"></div>
+  <div class="env-vignette"></div>
+
+  <!-- Top HUD -->
+  <div id="topbar">
+    <div class="brand">
+      <div class="brand-badge glass glow-border cyan-glow" id="brand-ico"></div>
+      <div>
+        <h1 class="neon">量子书阁</h1>
+        <p>QUANTUM · CODEX</p>
+      </div>
+    </div>
+    <div class="chips">
+      <span class="chip glass">中一 · SEC 1</span>
+      <span class="chip live glass glow-border"><span class="dot"></span>系统在线</span>
+    </div>
+  </div>
+
+  <!-- Library -->
+  <section id="library" class="screen">
+    <div class="lib-wrap">
+      <div class="hero fade">
+        <span class="eyebrow glass glow-border"><span id="hero-ico"></span>全息华文数字故事馆 · HOLOGRAPHIC READER</span>
+        <h2>走进故事的<span class="hl">未来</span></h2>
+        <p>为新加坡中一学生打造的沉浸式阅读舱。点亮拼音、轻触词语查释义、按下按钮聆听标准华语朗读。</p>
+      </div>
+      <div class="grid" id="grid"></div>
+      <div class="lib-foot">SELECT&nbsp;A&nbsp;CODEX&nbsp;TO&nbsp;BEGIN&nbsp;·&nbsp;选择一本故事开始阅读</div>
+    </div>
+  </section>
+
+  <!-- Reader -->
+  <section id="reader" class="screen is-hidden">
+    <div class="reader-bar">
+      <button class="btn ghost" id="btn-back"><span id="ic-back"></span><span class="label-hide">书架</span></button>
+      <div class="mid">
+        <h2 id="r-title" class="neon"></h2>
+        <p id="r-sub"></p>
+      </div>
+      <div class="counter"><b id="p-cur">01</b>/<span id="p-tot">01</span></div>
+    </div>
+
+    <div class="stage-wrap">
+      <div class="stage">
+        <!-- CSS-3D holographic book -->
+        <div class="book-scene" aria-hidden="true">
+          <div class="pedestal"></div>
+          <div class="book">
+            <div class="spine"></div>
+            <div class="leaf left"><div class="lines"><i></i><i></i><i></i><i></i><i></i></div></div>
+            <div class="leaf right"><div class="lines"><i></i><i></i><i></i><i></i><i></i></div></div>
+            <div class="leaf turning" id="turning"><div class="lines"><i></i><i></i><i></i><i></i><i></i></div></div>
+          </div>
+        </div>
+        <!-- Reading panel -->
+        <div class="panel glass glow-border hud-corners scanlines cyan-glow">
+          <div class="top-spark"></div>
+          <div class="page-stage">
+            <div id="page" class="reading pinyin-on"></div>
+          </div>
+        </div>
+        <button class="side-arrow prev btn glass glow-border icon" id="btn-prev" aria-label="上一页"><span id="ic-prev"></span></button>
+        <button class="side-arrow next btn glass glow-border icon" id="btn-next" aria-label="下一页"><span id="ic-next"></span></button>
+      </div>
+    </div>
+
+    <!-- Control dock -->
+    <div class="dock-wrap">
+      <div class="dock glass glow-border">
+        <button class="btn icon only-narrow" id="btn-prev-m" aria-label="上一页"><span id="ic-prev2"></span></button>
+        <button class="btn on" id="btn-pinyin"><span id="ic-lang"></span><span class="label-hide">拼音</span></button>
+        <button class="btn" id="btn-tts"><span id="ic-tts"></span><span class="label-hide">朗读</span></button>
+        <button class="btn" id="btn-font"><span id="ic-font"></span><span class="label-hide" id="font-label">标准</span></button>
+        <div class="progress only-wide"><i id="prog"></i></div>
+        <div class="dots" id="dots"></div>
+        <button class="btn icon only-narrow" id="btn-next-m" aria-label="下一页"><span id="ic-next2"></span></button>
+        <button class="btn only-wide" id="btn-next-d">下一页<span id="ic-chev"></span></button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Vocab popover -->
+  <div id="pop" class="hide glass glow-border hud-corners scanlines amber-glow" role="dialog" aria-label="词语释义">
+    <button class="x" id="pop-x" aria-label="关闭"><span id="ic-x"></span></button>
+    <div class="py" id="v-py"></div>
+    <div class="wrow"><h4 id="v-word"></h4><button class="sp" id="v-speak" aria-label="朗读词语"><span id="ic-sp"></span></button></div>
+    <div class="block"><div class="k moe">MOE 释义</div><div class="def" id="v-def"></div></div>
+    <div class="block"><div class="k en">ENGLISH</div><div class="eng" id="v-en"></div></div>
+    <div class="block divider"><div class="k ex">例句 · EXAMPLE</div><div class="ex" id="v-ex"></div></div>
+  </div>
+
+  <!-- Loader -->
+  <div id="loader">
+    <div>
+      <div class="ring"></div>
+      <p class="l1">正在初始化量子书阁</p>
+      <p class="l2">INITIALIZING&nbsp;QUANTUM&nbsp;CODEX</p>
+    </div>
+  </div>
+</div>
+
+<script>
+window.STORY_LIBRARY = [
+    {
+      id: "story-shouzhu",
+      title: "守株待兔",
+      englishTitle: "Waiting by the Stump",
+      level: "Secondary 1",
+      estimatedReadTime: "3 mins",
+      category: "成语故事 · Classical Idiom",
+      accent: "cyan",
+      glyph: "🐇",
+      pages: [
+        { pageNumber: 1, text: "从前，宋国有一个农夫。", pinyin: "cóng qián sòng guó yǒu yī gè nóng fū",
+          vocabulary: [] },
+        { pageNumber: 2, text: "他每天在田里辛苦地干活。", pinyin: "tā měi tiān zài tián lǐ xīn kǔ de gàn huó",
+          vocabulary: [ { word:"辛苦", pinyin:"xīn kǔ", definition:"身体或精神很累，付出了很多努力。", english:"hardworking; toilsome", example:"农夫每天辛苦地耕田。" } ] },
+        { pageNumber: 3, text: "有一天，一只兔子撞在树桩上，死了。", pinyin: "yǒu yī tiān yī zhī tù zi zhuàng zài shù zhuāng shàng sǐ le",
+          vocabulary: [ { word:"树桩", pinyin:"shù zhuāng", definition:"树木被砍掉后，留在地上的一段树干。", english:"tree stump", example:"兔子撞在树桩上。" } ] },
+        { pageNumber: 4, text: "农夫捡起兔子，非常高兴。", pinyin: "nóng fū jiǎn qǐ tù zi fēi cháng gāo xìng",
+          vocabulary: [] },
+        { pageNumber: 5, text: "从此，他放下锄头，天天守在树桩旁，希望再捡到兔子。", pinyin: "cóng cǐ tā fàng xià chú tóu tiān tiān shǒu zài shù zhuāng páng xī wàng zài jiǎn dào tù zi",
+          vocabulary: [ { word:"守株待兔", pinyin:"shǒu zhū dài tù", definition:"比喻不主动努力，只想靠运气或侥幸得到成功。", english:"to wait by a stump for a rabbit; to rely on luck instead of effort", example:"他不复习，只想守株待兔，考试当然不及格。" } ] },
+        { pageNumber: 6, text: "可是，兔子再也没有来，农夫成了大家的笑话。", pinyin: "kě shì tù zi zài yě méi yǒu lái nóng fū chéng le dà jiā de xiào huà",
+          vocabulary: [ { word:"笑话", pinyin:"xiào huà", definition:"让人觉得可笑的事；被别人取笑的对象。", english:"a joke; a laughing stock", example:"别做傻事，免得成为大家的笑话。" } ] }
+      ]
+    },
+    {
+      id: "story-change",
+      title: "嫦娥奔月",
+      englishTitle: "Chang'e Flies to the Moon",
+      level: "Secondary 1",
+      estimatedReadTime: "5 mins",
+      category: "民间传说 · Folklore",
+      accent: "quantum",
+      glyph: "🌙",
+      pages: [
+        { pageNumber: 1, text: "很久很久以前，天上有十个太阳。", pinyin: "hěn jiǔ hěn jiǔ yǐ qián tiān shàng yǒu shí gè tài yáng", vocabulary: [] },
+        { pageNumber: 2, text: "大地被晒得又干又热，庄稼都枯死了。", pinyin: "dà dì bèi shài de yòu gān yòu rè zhuāng jia dōu kū sǐ le",
+          vocabulary: [ { word:"枯死", pinyin:"kū sǐ", definition:"植物因为缺水而干枯、死亡。", english:"to wither and die", example:"天气太热，庄稼都枯死了。" } ] },
+        { pageNumber: 3, text: "英雄后羿射下九个太阳，救了百姓。", pinyin: "yīng xióng hòu yì shè xià jiǔ gè tài yáng jiù le bǎi xìng",
+          vocabulary: [ { word:"英雄", pinyin:"yīng xióng", definition:"勇敢无畏、为大家做出贡献的人。", english:"hero", example:"后羿是射日救民的英雄。" } ] },
+        { pageNumber: 4, text: "王母娘娘送给后羿一颗神奇的仙丹。", pinyin: "wáng mǔ niáng niáng sòng gěi hòu yì yī kē shén qí de xiān dān",
+          vocabulary: [ { word:"仙丹", pinyin:"xiān dān", definition:"神话中能让人长生不老的神奇药丸。", english:"elixir of immortality", example:"嫦娥吞下了这颗仙丹。" } ] },
+        { pageNumber: 5, text: "后羿的妻子嫦娥，美丽又善良。", pinyin: "hòu yì de qī zi cháng é měi lì yòu shàn liáng",
+          vocabulary: [ { word:"善良", pinyin:"shàn liáng", definition:"心地好，待人和气、宽厚。", english:"kind-hearted", example:"嫦娥是个善良的人。" } ] },
+        { pageNumber: 6, text: "为了不让坏人抢走仙丹，嫦娥把它吞了下去。", pinyin: "wèi le bù ràng huài rén qiǎng zǒu xiān dān cháng é bǎ tā tūn le xià qù", vocabulary: [] },
+        { pageNumber: 7, text: "忽然，她的身体轻轻飘了起来，飞向月亮。", pinyin: "hū rán tā de shēn tǐ qīng qīng piāo le qǐ lái fēi xiàng yuè liàng", vocabulary: [] },
+        { pageNumber: 8, text: "从此，嫦娥住在月宫里，每年中秋节和人们相望。", pinyin: "cóng cǐ cháng é zhù zài yuè gōng lǐ měi nián zhōng qiū jié hé rén men xiāng wàng",
+          vocabulary: [ { word:"中秋节", pinyin:"zhōng qiū jié", definition:"农历八月十五的传统节日，人们赏月、吃月饼、团圆。", english:"Mid-Autumn Festival", example:"中秋节我们一家人一起赏月。" } ] }
+      ]
+    },
+    {
+      id: "story-hongdian",
+      title: "狮城的小红点",
+      englishTitle: "The Little Red Dot",
+      level: "Secondary 1",
+      estimatedReadTime: "5 mins",
+      category: "新加坡故事 · Modern SG",
+      accent: "amber",
+      glyph: "🦁",
+      pages: [
+        { pageNumber: 1, text: "小明是新加坡的一名中学生。", pinyin: "xiǎo míng shì xīn jiā pō de yī míng zhōng xué shēng", vocabulary: [] },
+        { pageNumber: 2, text: "有一次上地理课，他看见世界地图。", pinyin: "yǒu yī cì shàng dì lǐ kè tā kàn jiàn shì jiè dì tú", vocabulary: [] },
+        { pageNumber: 3, text: "新加坡小得像一个红色的小点。", pinyin: "xīn jiā pō xiǎo de xiàng yī gè hóng sè de xiǎo diǎn", vocabulary: [] },
+        { pageNumber: 4, text: "小明失望地问：这么小的国家有什么了不起？", pinyin: "xiǎo míng shī wàng de wèn zhè me xiǎo de guó jiā yǒu shén me liǎo bù qǐ",
+          vocabulary: [ { word:"了不起", pinyin:"liǎo bù qǐ", definition:"非常好，超出一般，值得让人佩服。", english:"remarkable; amazing", example:"他小小年纪就会三种语言，真了不起。" } ] },
+        { pageNumber: 5, text: "老师微笑着说：虽然我们小，却很团结。", pinyin: "lǎo shī wēi xiào zhe shuō suī rán wǒ men xiǎo què hěn tuán jié",
+          vocabulary: [ { word:"团结", pinyin:"tuán jié", definition:"大家齐心合力，紧紧地联合在一起。", english:"unity; to unite", example:"我们要团结起来，共同面对困难。" } ] },
+        { pageNumber: 6, text: "不同种族的人，说着不同的语言，却像一家人。", pinyin: "bù tóng zhǒng zú de rén shuō zhe bù tóng de yǔ yán què xiàng yī jiā rén",
+          vocabulary: [ { word:"种族", pinyin:"zhǒng zú", definition:"有共同来源和特征的人群，如华族、马来族、印度族。", english:"race; ethnic group", example:"新加坡有不同种族的人和睦相处。" } ] },
+        { pageNumber: 7, text: "小明听了，心里充满了自豪。", pinyin: "xiǎo míng tīng le xīn lǐ chōng mǎn le zì háo",
+          vocabulary: [ { word:"自豪", pinyin:"zì háo", definition:"因为自己或集体的成就而感到光荣、骄傲。", english:"proud", example:"我为自己的国家感到自豪。" } ] },
+        { pageNumber: 8, text: "这个小红点，就是他深爱的家园。", pinyin: "zhè gè xiǎo hóng diǎn jiù shì tā shēn ài de jiā yuán",
+          vocabulary: [ { word:"家园", pinyin:"jiā yuán", definition:"家庭生活的地方；温暖、可爱的家乡。", english:"homeland; home", example:"新加坡是我们美丽的家园。" } ] }
+      ]
+    },
+    {
+      id: "story-yugong",
+      title: "愚公移山",
+      englishTitle: "The Old Man Who Moved Mountains",
+      level: "Secondary 1",
+      estimatedReadTime: "5 mins",
+      category: "寓言故事 · Classical Fable",
+      accent: "cyan",
+      glyph: "⛰️",
+      pages: [
+        { pageNumber: 1, text: "从前，有一位老人叫愚公。", pinyin: "cóng qián yǒu yī wèi lǎo rén jiào yú gōng", vocabulary: [] },
+        { pageNumber: 2, text: "他家门前有两座大山，挡住了去路。", pinyin: "tā jiā mén qián yǒu liǎng zuò dà shān dǎng zhù le qù lù",
+          vocabulary: [ { word:"挡住", pinyin:"dǎng zhù", definition:"拦在前面，使人或东西不能通过。", english:"to block; to obstruct", example:"两座大山挡住了村子的去路。" } ] },
+        { pageNumber: 3, text: "愚公决定带领全家人，把大山搬走。", pinyin: "yú gōng jué dìng dài lǐng quán jiā rén bǎ dà shān bān zǒu", vocabulary: [] },
+        { pageNumber: 4, text: "邻居笑他太傻，这么老了怎么搬得动？", pinyin: "lín jū xiào tā tài shǎ zhè me lǎo le zěn me bān de dòng", vocabulary: [] },
+        { pageNumber: 5, text: "愚公说：我死了还有儿子，子子孙孙没有尽头。", pinyin: "yú gōng shuō wǒ sǐ le hái yǒu ér zi zǐ zǐ sūn sūn méi yǒu jìn tóu", vocabulary: [] },
+        { pageNumber: 6, text: "他们坚持不懈，天天挖山不停。", pinyin: "tā men jiān chí bù xiè tiān tiān wā shān bù tíng",
+          vocabulary: [ { word:"坚持不懈", pinyin:"jiān chí bù xiè", definition:"坚持到底，一点也不松懈、不放弃。", english:"to persevere unremittingly", example:"他坚持不懈地练习，终于成功了。" } ] },
+        { pageNumber: 7, text: "天帝被感动了，派神仙把两座山搬走。", pinyin: "tiān dì bèi gǎn dòng le pài shén xiān bǎ liǎng zuò shān bān zǒu",
+          vocabulary: [ { word:"感动", pinyin:"gǎn dòng", definition:"因为受到某件事的触动而心里产生情感。", english:"to be moved; touched", example:"他的努力让大家都很感动。" } ] },
+        { pageNumber: 8, text: "只要有恒心，再难的事也能成功。", pinyin: "zhǐ yào yǒu héng xīn zài nán de shì yě néng chéng gōng",
+          vocabulary: [ { word:"恒心", pinyin:"héng xīn", definition:"长久不变的决心和毅力。", english:"perseverance", example:"做任何事都要有恒心。" }, { word:"愚公移山", pinyin:"yú gōng yí shān", definition:"比喻做事有毅力、不怕困难，坚持到底就能成功。", english:"the Foolish Old Man moves mountains; perseverance conquers all", example:"学习要有愚公移山的精神。" } ] }
+      ]
+    }
+  ];
+</script>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ============ Inline SVG icons (lucide-style) ============ */
+  const S = (p,extra)=>`<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" ${extra||""}>${p}</svg>`;
+  const IC = {
+    book:S('<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>'),
+    sparkles:S('<path d="M9.9 3.6 8 8l-4.4 1.9L8 11.9 9.9 16l1.9-4.1L16 9.9 11.8 8z"/><path d="M18 4v4"/><path d="M20 6h-4"/>'),
+    clock:S('<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>'),
+    layers:S('<path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/>'),
+    arrowRight:S('<path d="M5 12h14"/><path d="m13 6 6 6-6 6"/>'),
+    arrowLeft:S('<path d="M19 12H5"/><path d="m11 6-6 6 6 6"/>'),
+    chevronLeft:S('<path d="m15 6-6 6 6 6"/>'),
+    chevronRight:S('<path d="m9 6 6 6-6 6"/>'),
+    languages:S('<path d="m5 8 6 6"/><path d="m4 14 6-6 2-3"/><path d="M2 5h12"/><path d="M7 2h1"/><path d="m22 22-5-10-5 10"/><path d="M14 18h6"/>'),
+    volume:S('<path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/>'),
+    type:S('<path d="M4 7V5h16v2"/><path d="M9 19h6"/><path d="M12 5v14"/>'),
+    x:S('<path d="M18 6 6 18"/><path d="m6 6 12 12"/>'),
+  };
+  const setIcon=(id,name)=>{const el=document.getElementById(id); if(el) el.innerHTML=IC[name];};
+
+  /* ============ Story library (spec JSON schema) ============ */
+  const STORIES = STORY_LIBRARY;
+
+  /* ============ helpers ============ */
+  const $ = (id)=>document.getElementById(id);
+  const isHan=(ch)=>/[㐀-鿿豈-﫿]/.test(ch);
+  const esc=(s)=>String(s).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));
+  const accentHex=(a)=> a==='quantum'?'#7000FF':a==='amber'?'#FFB800':'#00F0FF';
+
+  function buildPageHTML(page){
+    const syl=(page.pinyin||'').trim().split(/\s+/).filter(Boolean); let si=0;
+    const text=page.text||'';
+    const vs=[...(page.vocabulary||[])].sort((a,b)=>b.word.length-a.word.length);
+    const ruby=(str)=>{let out='';for(const ch of str){ if(isHan(ch)){const py=syl[si++]||'';out+=`<ruby>${esc(ch)}<rt>${esc(py)}</rt></ruby>`;} else {out+=`<span class="punc">${esc(ch)}</span>`;}}return out;};
+    let html='',i=0;
+    while(i<text.length){
+      let m=null; for(const v of vs){ if(v.word && text.startsWith(v.word,i)){m=v;break;} }
+      if(m){ html+=`<span class="vocab" data-word="${esc(m.word)}" role="button" tabindex="0" aria-label="词语 ${esc(m.word)}">${ruby(m.word)}</span>`; i+=m.word.length; }
+      else { html+=ruby(text[i]); i+=1; }
+    }
+    return html;
+  }
+
+  /* ============ state ============ */
+  const state={story:null,page:0,pinyin:true,fontIdx:1};
+  const FONTS=[{l:'小',s:'0.86'},{l:'标准',s:'1'},{l:'大',s:'1.18'}];
+
+  /* ============ Library ============ */
+  function renderLibrary(){
+    $('grid').innerHTML = STORIES.map((s,idx)=>{
+      const hex=accentHex(s.accent);
+      return `<button class="card glass glow-border hud-corners scanlines fade" style="animation-delay:${idx*80}ms" data-id="${s.id}">
+        <span class="sheen"></span>
+        <div class="card-top">
+          <div class="glyph" style="background:${hex}14;border:1px solid ${hex}44;box-shadow:0 0 24px ${hex}33">${s.glyph}</div>
+          <span class="lvl" style="color:${hex};border:1px solid ${hex}44;background:${hex}10">${esc(s.level)}</span>
+        </div>
+        <h3>${esc(s.title)}</h3>
+        <p class="en">${esc(s.englishTitle)}</p>
+        <p class="cat">${esc(s.category)}</p>
+        <div class="card-foot">
+          <span class="m">${IC.clock}${esc(s.estimatedReadTime)}</span>
+          <span class="m">${IC.layers}${s.pages.length} 页</span>
+          <span class="go" style="color:${hex}">阅读 ${IC.arrowRight}</span>
+        </div>
+      </button>`;
+    }).join('');
+    $('grid').querySelectorAll('.card').forEach(el=>el.addEventListener('click',()=>openStory(el.dataset.id)));
+  }
+
+  /* ============ Reader ============ */
+  function openStory(id){
+    const s=STORIES.find(x=>x.id===id); if(!s) return;
+    state.story=s; state.page=0;
+    $('r-title').textContent=s.title;
+    $('r-sub').textContent=`${s.englishTitle} · ${s.category}`;
+    $('p-tot').textContent=String(s.pages.length).padStart(2,'0');
+    applyAccent(s.accent);
+    $('library').classList.add('is-hidden');
+    $('reader').classList.remove('is-hidden');
+    renderPage(false);
+  }
+  function applyAccent(a){
+    const hex=accentHex(a);
+    document.documentElement.style.setProperty('--cyan', a==='amber' ? '#FFD24D' : hex);
+    // keep book/pedestal readable; only shift primary accent subtly
+    document.documentElement.style.setProperty('--cyan','#00F0FF'); // stable UI; accent shown per-card
+  }
+  function closeStory(){
+    stopTTS(); hideVocab();
+    $('reader').classList.add('is-hidden');
+    $('library').classList.remove('is-hidden');
+    state.story=null;
+  }
+  function renderPage(anim,dir){
+    const s=state.story; if(!s) return;
+    const page=s.pages[state.page];
+    const el=$('page');
+    el.className=`reading ${state.pinyin?'pinyin-on':''}`;
+    el.style.setProperty('--fs',FONTS[state.fontIdx].s);
+    el.innerHTML=buildPageHTML(page);
+    if(anim){ el.classList.remove('flip-next','flip-prev'); void el.offsetWidth; el.classList.add(dir==='prev'?'flip-prev':'flip-next'); }
+    $('p-cur').textContent=String(state.page+1).padStart(2,'0');
+    $('prog').style.width=((state.page+1)/s.pages.length*100)+'%';
+    const first=state.page===0,last=state.page===s.pages.length-1;
+    ['btn-prev','btn-prev-m'].forEach(id=>$(id).disabled=first);
+    ['btn-next','btn-next-m','btn-next-d'].forEach(id=>$(id).disabled=last);
+    renderDots(); bindVocab();
+  }
+  function renderDots(){
+    const s=state.story; if(!s) return;
+    $('dots').innerHTML=s.pages.map((_,i)=>`<i class="${i===state.page?'on':''}"></i>`).join('');
+  }
+  function flipBook(dir){
+    const t=$('turning'); t.classList.remove('next','prev'); void t.offsetWidth; t.classList.add(dir);
+  }
+  function goNext(){ const s=state.story; if(!s||state.page>=s.pages.length-1)return; stopTTS();hideVocab(); state.page++; flipBook('next'); renderPage(true,'next'); }
+  function goPrev(){ if(!state.story||state.page<=0)return; stopTTS();hideVocab(); state.page--; flipBook('prev'); renderPage(true,'prev'); }
+
+  function togglePinyin(){
+    state.pinyin=!state.pinyin;
+    try{localStorage.setItem('codex_pinyin',state.pinyin?'1':'0');}catch(e){}
+    $('btn-pinyin').classList.toggle('on',state.pinyin);
+    $('page').classList.toggle('pinyin-on',state.pinyin);
+  }
+  function cycleFont(){
+    state.fontIdx=(state.fontIdx+1)%FONTS.length;
+    try{localStorage.setItem('codex_font',String(state.fontIdx));}catch(e){}
+    $('font-label').textContent=FONTS[state.fontIdx].l;
+    $('page').style.setProperty('--fs',FONTS[state.fontIdx].s);
+  }
+
+  /* ============ TTS ============ */
+  let ttsOn=false, zhVoice=null;
+  function pickVoice(){
+    const vs=window.speechSynthesis?speechSynthesis.getVoices():[];
+    zhVoice=vs.find(v=>/zh[-_]CN/i.test(v.lang))||vs.find(v=>/^zh/i.test(v.lang))||vs.find(v=>/chinese|mandarin|普通话|华语/i.test(v.name))||null;
+  }
+  function speak(text,onEnd){
+    if(!('speechSynthesis' in window)){ alert('您的浏览器不支持朗读功能。'); onEnd&&onEnd(); return; }
+    speechSynthesis.cancel();
+    const u=new SpeechSynthesisUtterance(text); u.lang='zh-CN'; u.rate=.85; u.pitch=1;
+    if(zhVoice)u.voice=zhVoice;
+    u.onend=()=>onEnd&&onEnd(); u.onerror=()=>onEnd&&onEnd();
+    speechSynthesis.speak(u);
+  }
+  function toggleTTS(){
+    if(!state.story)return;
+    if(ttsOn){stopTTS();return;}
+    ttsOn=true; $('btn-tts').classList.add('on');
+    speak(state.story.pages[state.page].text,()=>stopTTS());
+  }
+  function stopTTS(){ if('speechSynthesis' in window)speechSynthesis.cancel(); ttsOn=false; const b=$('btn-tts'); if(b)b.classList.remove('on'); }
+
+  /* ============ Vocab popover ============ */
+  let activeEl=null;
+  function bindVocab(){
+    $('page').querySelectorAll('.vocab').forEach(el=>{
+      el.addEventListener('click',e=>{e.stopPropagation();showVocab(el);});
+      el.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();showVocab(el);}});
+    });
+  }
+  function showVocab(el){
+    const word=el.dataset.word;
+    const v=(state.story.pages[state.page].vocabulary||[]).find(x=>x.word===word);
+    if(!v)return;
+    $('page').querySelectorAll('.vocab.active').forEach(x=>x.classList.remove('active'));
+    el.classList.add('active'); activeEl=el;
+    $('v-word').textContent=v.word; $('v-py').textContent=v.pinyin||'';
+    $('v-def').textContent=v.definition||''; $('v-en').textContent=v.english||''; $('v-ex').textContent=v.example||'—';
+    $('pop').classList.remove('hide');
+    requestAnimationFrame(()=>positionPop(el));
+    $('v-speak').onclick=(e)=>{e.stopPropagation();speak(v.word);};
+  }
+  function positionPop(el){
+    const p=$('pop'), r=el.getBoundingClientRect(), pw=p.offsetWidth, ph=p.offsetHeight;
+    let left=r.left+r.width/2-pw/2, top=r.bottom+12;
+    if(top+ph>window.innerHeight-12) top=r.top-ph-12;
+    left=Math.max(12,Math.min(left,window.innerWidth-pw-12)); top=Math.max(12,top);
+    p.style.left=left+'px'; p.style.top=top+'px';
+  }
+  function hideVocab(){ $('pop').classList.add('hide'); if(activeEl)activeEl.classList.remove('active'); activeEl=null; }
+
+  /* ============ Particle field (canvas) ============ */
+  function initFX(){
+    const cv=$('fx'), ctx=cv.getContext('2d');
+    const reduce=window.matchMedia&&matchMedia('(prefers-reduced-motion:reduce)').matches;
+    let W,H,parts=[];
+    function resize(){ W=cv.width=innerWidth*Math.min(devicePixelRatio,2); H=cv.height=innerHeight*Math.min(devicePixelRatio,2); cv.style.width=innerWidth+'px'; cv.style.height=innerHeight+'px'; }
+    resize(); addEventListener('resize',resize);
+    const N=Math.min(90,Math.round(innerWidth/14));
+    for(let i=0;i<N;i++){parts.push({x:Math.random(),y:Math.random(),vx:(Math.random()-.5)*.0004,vy:(Math.random()-.5)*.0004+ -.00015,r:Math.random()*2+.6,c:Math.random()>.5?'0,240,255':'112,0,255',a:Math.random()*.5+.2});}
+    function draw(){
+      ctx.clearRect(0,0,W,H);
+      ctx.globalCompositeOperation='lighter';
+      for(const p of parts){
+        if(!reduce){p.x+=p.vx;p.y+=p.vy; if(p.y<-0.02)p.y=1.02; if(p.x<-.02)p.x=1.02; if(p.x>1.02)p.x=-.02;}
+        const x=p.x*W,y=p.y*H,r=p.r*Math.min(devicePixelRatio,2);
+        const g=ctx.createRadialGradient(x,y,0,x,y,r*6);
+        g.addColorStop(0,`rgba(${p.c},${p.a})`); g.addColorStop(1,`rgba(${p.c},0)`);
+        ctx.fillStyle=g; ctx.beginPath(); ctx.arc(x,y,r*6,0,Math.PI*2); ctx.fill();
+      }
+      ctx.globalCompositeOperation='source-over';
+      if(!reduce) requestAnimationFrame(draw);
+    }
+    draw();
+  }
+
+  /* ============ wire up ============ */
+  function bind(){
+    $('btn-back').addEventListener('click',closeStory);
+    ['btn-prev','btn-prev-m'].forEach(id=>$(id).addEventListener('click',goPrev));
+    ['btn-next','btn-next-m','btn-next-d'].forEach(id=>$(id).addEventListener('click',goNext));
+    $('btn-pinyin').addEventListener('click',togglePinyin);
+    $('btn-tts').addEventListener('click',toggleTTS);
+    $('btn-font').addEventListener('click',cycleFont);
+    $('pop-x').addEventListener('click',hideVocab);
+    document.addEventListener('click',e=>{ if(!e.target.closest('#pop')&&!e.target.closest('.vocab'))hideVocab(); });
+    document.addEventListener('keydown',e=>{
+      if($('reader').classList.contains('is-hidden'))return;
+      if(e.key==='ArrowRight')goNext();
+      else if(e.key==='ArrowLeft')goPrev();
+      else if(e.key==='Escape'){ if(!$('pop').classList.contains('hide'))hideVocab(); else closeStory(); }
+      else if(e.key.toLowerCase()==='p')togglePinyin();
+      else if(e.key.toLowerCase()==='s')toggleTTS();
+    });
+    addEventListener('resize',()=>{if(activeEl)positionPop(activeEl);});
+    // restore prefs
+    try{
+      const sp=localStorage.getItem('codex_pinyin'); if(sp!==null){state.pinyin=sp==='1';$('btn-pinyin').classList.toggle('on',state.pinyin);}
+      const sf=localStorage.getItem('codex_font'); if(sf!==null){state.fontIdx=Math.min(2,Math.max(0,parseInt(sf,10)||1));$('font-label').textContent=FONTS[state.fontIdx].l;}
+    }catch(e){}
+  }
+
+  function icons(){
+    setIcon('brand-ico','book'); setIcon('hero-ico','sparkles');
+    setIcon('ic-back','chevronLeft'); setIcon('ic-prev','arrowLeft'); setIcon('ic-next','arrowRight');
+    setIcon('ic-prev2','arrowLeft'); setIcon('ic-next2','arrowRight'); setIcon('ic-chev','chevronRight');
+    setIcon('ic-lang','languages'); setIcon('ic-tts','volume'); setIcon('ic-font','type');
+    setIcon('ic-x','x'); setIcon('ic-sp','volume');
+  }
+
+  function boot(){
+    icons(); renderLibrary(); bind(); initFX();
+    if('speechSynthesis' in window){ pickVoice(); speechSynthesis.onvoiceschanged=pickVoice; }
+    setTimeout(()=>{ const l=$('loader'); l.style.opacity='0'; setTimeout(()=>l.classList.add('is-hidden'),700); },700);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',boot); else boot();
+})();
+</script>
+
+</body>
+</html>
